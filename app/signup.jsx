@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvo
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import auth from "../firebase.js"
+import Sidebar from "../components/Sidebar";
+
 
 export default function SignUpScreen() {
     const router = useRouter();
@@ -64,6 +66,7 @@ export default function SignUpScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
+            <Sidebar/>
             <View style={styles.innerContainer}>
                 <Text style={styles.title}>Sign Up</Text>
 
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
     },
     container: {
         flex: 1,
-        backgroundColor: "#121212",
+        backgroundColor: "#fff",
     },
     innerContainer: {
         flex: 1,

@@ -73,82 +73,81 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <Sidebar />
-       <View style={styles.header}>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search ...."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity style={styles.searchButton}>
-            <MaterialIcons name="search" size={24} color="#FFD700" />
+    <>
+     <Sidebar/>
+
+<View style={styles.container}>
+  {/* Header */}
+   {/* <View style={styles.header}>
+    <View style={styles.searchContainer}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search ...."
+        placeholderTextColor="#999"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+      <TouchableOpacity style={styles.searchButton}>
+        <MaterialIcons name="search" size={24} color="#FFD700" />
+      </TouchableOpacity>
+    </View> */}
+    {/* <TouchableOpacity style={styles.cartButton}>
+      <FontAwesome name="shopping-cart" size={24} color="#FFD700" />
+      {cart.length > 0 && (
+        <View style={styles.cartBadge}>
+          <Text style={styles.cartBadgeText}>{cart.length}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  </View> */}
+
+
+  {/* Products Grid */}
+  <FlatList
+    data={filteredProducts}
+    numColumns={2}
+    contentContainerStyle={styles.productsGrid}
+    keyExtractor={(item) => item.id.toString()}
+    renderItem={({ item }) => (
+      <View style={styles.productCard}>
+        <Image source={item.image} style={styles.productImage} />
+        <View style={styles.productDetails}>
+          <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
+
+          <View style={styles.ratingContainer}>
+            {renderStars(item.rating)}
+            <Text style={styles.ratingText}>{item.rating}</Text>
+          </View>
+
+          <Text style={styles.reviewsText}>{item.reviews.toLocaleString()} ratings</Text>
+
+          <View style={styles.priceContainer}>
+            <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+            <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
+          </View>
+
+          <Text style={styles.deliveryBadge}>Dols Premium Delivery</Text>
+
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={() => addToCart(item)}
+          >
+            <Text style={styles.addToCartText}>Add to Cart</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.cartButton}>
-          <FontAwesome name="shopping-cart" size={24} color="#FFD700" />
-          {cart.length > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cart.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
       </View>
-
-      {/* Store Banner */}
-      <View style={styles.bannerContainer}>
-        <Text style={styles.storeName}>STORE</Text>
-        <Text style={styles.storeTagline}>Premium Tech at Golden Prices</Text>
-      </View>
-
-      {/* Products Grid */}
-      <FlatList
-        data={filteredProducts}
-        numColumns={2}
-        contentContainerStyle={styles.productsGrid}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <Image source={item.image} style={styles.productImage} />
-            <View style={styles.productDetails}>
-              <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-
-              <View style={styles.ratingContainer}>
-                {renderStars(item.rating)}
-                <Text style={styles.ratingText}>{item.rating}</Text>
-              </View>
-
-              <Text style={styles.reviewsText}>{item.reviews.toLocaleString()} ratings</Text>
-
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-                <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
-              </View>
-
-              <Text style={styles.deliveryBadge}>Dols Premium Delivery</Text>
-
-              <TouchableOpacity
-                style={styles.addToCartButton}
-                onPress={() => addToCart(item)}
-              >
-                <Text style={styles.addToCartText}>Add to Cart</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
-    </View>
+    )}
+  />
+</View>
+    </>
+  
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#fff",
   },
   mainContent: {
     flex: 1,
@@ -157,7 +156,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1E1E1E",
+    // backgroundColor: "#1E1E1E",
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
@@ -172,7 +171,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     top: 50,
     left:30,
-    backgroundColor: "#2D2D2D",
+    // backgroundColor: "#2D2D2D",
     borderRadius: 8,
     marginHorizontal: 5,
     height: 40,
@@ -198,7 +197,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 0,
     top: 0,
-    backgroundColor: "#FFD700",
+    // backgroundColor: "#FFD700",
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
   },
   bannerContainer: {
     top: 40,
-    backgroundColor: "#1E1E1E",
+    // backgroundColor: "#1E1E1E",
     padding: 20,
     alignItems: 'center',
     borderBottomWidth: 1,
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
   productCard: {
     flex: 1,
     margin: 5,
-    backgroundColor: "#1E1E1E",
+    // backgroundColor: "#1E1E1E",
     borderRadius: 10,
     overflow: "hidden",
     maxWidth: "48%",
@@ -246,7 +245,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 150,
     resizeMode: "contain",
-    backgroundColor: "#2D2D2D",
+    // backgroundColor: "#2D2D2D",
   },
   productDetails: {
     padding: 12,
@@ -295,7 +294,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   addToCartButton: {
-    backgroundColor: "#333",
+    // backgroundColor: "#333",
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: "center",

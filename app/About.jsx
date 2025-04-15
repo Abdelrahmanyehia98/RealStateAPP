@@ -10,9 +10,9 @@ export default function About() {
     'Teto',
   ];
 
-  return (
-    <View style={styles.container}>
+  return (<>
       <Sidebar />
+      <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.text}>About Page</Text>
         <View style={styles.teamMembers}>
@@ -28,6 +28,8 @@ export default function About() {
         </View>
       </View>
     </View>
+      </>
+  
   );
 }
 
