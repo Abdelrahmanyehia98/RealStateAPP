@@ -150,7 +150,7 @@ const Sidebar = () => {
       >
         {menuItems.map((item) => (
           <Pressable 
-            key={item.id}
+            key={item.name}
             onPress={() => {
               router.push(item.path);
               toggleMenu();
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#000',
   },
   logoContainer: {
     flexDirection: 'row',
