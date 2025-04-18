@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "List2025",
-    "slug": "List2025",
+    "name": "Realestate",
+    "slug": "Realestate",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Screenshot 2024-12-10 025803.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/Screenshot 2024-12-10 025803.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -22,7 +22,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/Screenshot 2024-12-10 025803.png"
     },
     "plugins": [
       "expo-router"
