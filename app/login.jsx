@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import auth from "../firebase.js"
+import {auth} from "../firebase.js"
 import Sidebar from "../components/Sidebar";
 
 
@@ -53,7 +53,7 @@ export default function LoginScreen() {
 
             }).finally(() => {
                 setIsLoading(false);
-                router.replace("/Home");
+                router.replace("/");
 
             });;
     }
