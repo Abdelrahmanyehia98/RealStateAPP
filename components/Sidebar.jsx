@@ -1,153 +1,307 @@
-import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from "react-native";
+import React, { useState, useRef } from 'react';
+import { 
+  View, 
+  Text, 
+  Pressable, 
+  StyleSheet, 
+  Image, 
+  SafeAreaView, 
+  Animated, 
+  Dimensions,
+} from 'react-native';
 import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useRoute } from '@react-navigation/native';
 
-export default function Sidebar() {
+const Sidebar = () => {
+  
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const slideAnim = useState(new Animated.Value(-Dimensions.get('window').width))[0];
+  let route =useRoute().name
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [isMenuOpened, setIsMenuOpened] = useState(false);
+  const windowWidth = Dimensions.get('window').width;
+  const translateX = useRef(new Animated.Value(2*windowWidth)).current;
 
-  const routes = [
-    { name: "Home", path: "/" },
-    { name: "About", path: "/About" },
-    { name: "Scroll View", path: "/scroll-view" },
+  const toggleMenu = () => {
+  
+  // Handle menu toggle animation
+
+    
+    if (isMenuOpened) {
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: windowWidth,
+          duration: 300,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(translateX, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+  
+      ]).start();
+    }
+    setIsMenuOpened(!isMenuOpened);
+  };
+
+  // Menu items data
+  const menuItems = [
+    {title: "Home", path: "/",name:"index" },
+    {title: "About", path: "/About" ,name:"About" },
+    {title: "Admin", path: "/About" ,name:"Admin" },
+    {title: "Profile", path: "/About" ,name:"Profile" },
+    {title: "Sell", path: "/About",name:"Sell" },
   ];
-
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: isOpen ? 0 : -Dimensions.get('window').width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [isOpen]);
-
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleLogout = () => {
-    router.push("/login");
-  };
 
   return (
     <>
-      
-      <TouchableOpacity style={styles.menuButton} onPress={toggleSidebar}>
-        <MaterialIcons name="menu" size={28} color="#FFD700" />
-      </TouchableOpacity>
+      {/* Header */}
+      <SafeAreaView 
+        style={styles.safeArea}
+        onLayout={(event) => {
+          const { height } = event.nativeEvent.layout;
+          setHeaderHeight(height);
+        }}
+      >
+        <View style={styles.container}>
+          <View style={styles.logoContainer}>
+            <Image
+              style={styles.logoImage}
+              source={require('./../assets/Screenshot 2024-12-10 025803.png')}
+            />
+            <Text style={styles.logoText}>RealEstate</Text>
+          </View>
 
-      {isOpen && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={toggleSidebar}
-        />
-      )}
+          <View style={styles.authButtons}>
+                {/* Logout Button */}
+             {/* <Pressable
+              style={({ pressed }) => [
+                styles.logoutButton,
+                pressed && styles.logoutButtonPressed,
+              ]}
+            >
+              {({ pressed }) => (
+                <Text style={[styles.logoutText, pressed && styles.logoutTextPressed]}>
+                  Logout
+                </Text>
+              )}
+            </Pressable>  */}
+            <Pressable
+              onPress={() => router.push("/login")}
+              style={({ pressed }) => [
+                styles.loginButton,
+                pressed && styles.loginButtonPressed,
+              ]}
+            >
+              {({ pressed }) => (
+                <Text style={[styles.loginText, pressed && styles.loginTextPressed]}>
+                  Login
+                </Text>
+              )}
+            </Pressable>
 
-      
+            <Pressable
+              onPress={() => router.push("/signup")}
+              style={({ pressed }) => [
+                styles.registerButton,
+                pressed && styles.registerButtonPressed,
+              ]}
+            >
+              {({ pressed }) => (
+                <Text style={[styles.registerText, pressed && styles.registerTextPressed]}>
+                  Register
+                </Text>
+              )}
+            </Pressable>
+          </View>
 
+          <Pressable
+            onPress={toggleMenu}
+            style={({ pressed }) => [
+              styles.menuButton,
+              pressed && styles.menuButtonPressed,
+            ]}
+          >
+            {({ pressed }) => (
+              <Text style={[styles.menuText, pressed && styles.menuTextPressed]}>
+                ☰
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </SafeAreaView>
+
+    
+
+      {/* Sidebar Menu */}
       <Animated.View 
         style={[
-          styles.sidebar,
-          {
-            transform: [{ translateX: slideAnim }]
+          styles.menu,
+          { 
+            transform: [{ translateX }],
+            top: headerHeight,
+         
           }
         ]}
       >
-       
-
-        <View style={styles.sidebarHeader}>
-          <Text style={styles.sidebarTitle}>Dols Store</Text>
-          <TouchableOpacity onPress={toggleSidebar}>
-            <MaterialIcons name="close" size={24} color="#FFD700" />
-          </TouchableOpacity>
-        </View>
-
-        
-        {routes.map((route, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.navItem}
+        {menuItems.map((item) => (
+          <Pressable 
+            key={item.name}
             onPress={() => {
-              router.push(route.path);
-              setIsOpen(false);
+              router.push(item.path);
+              toggleMenu();
+           
             }}
+            style={styles.menuItem}
           >
-            <Text style={styles.navText}>{route.name}</Text>
-          </TouchableOpacity>
+            <Text style={[styles.menuItemText,route===item.name && styles.activeItem]}>{item.title}</Text>
+          </Pressable>
         ))}
-
-       
-       
-        <TouchableOpacity
-          style={[styles.navItem, styles.logoutButton]}
-          onPress={handleLogout}
-        >
-          <Text style={styles.navText}>Logout</Text>
-        </TouchableOpacity>
+        
+        
       </Animated.View>
     </>
   );
-}
-
-const windowWidth = Dimensions.get('window').width;
+};
 
 const styles = StyleSheet.create({
-  menuButton: {
-    position: 'absolute',
-    left: 15,
-    top: 27,
-    zIndex: 10,
+  activeItem:{
+    fontWeight:'bold'
+  },
+  safeArea: {
+    backgroundColor: '#fff',
+  },
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 10,
-  },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    zIndex: 20,
-  },
-  sidebar: {
-    width: windowWidth * 0.7,
-    backgroundColor: "#1E1E1E",
-    height: "100%",
-    position: "absolute",
-    left: 0,
-    top: 0,
-    zIndex: 30,
-    borderRightWidth: 1,
-    borderRightColor: "#333",
-  },
-  sidebarHeader: {
-    padding: 20,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderColor: '#000',
   },
-  sidebarTitle: {
-    color: "#FFD700",
-    fontSize: 20,
-    fontWeight: "bold",
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  navItem: {
-    paddingVertical: 15,
+  logoImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+    marginRight: 5,
+  },
+  logoText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
+  },
+  authButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  
+  // Logout Button Styles
+  logoutButton: {
+    borderWidth: 1,
+    borderColor: 'darkred',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginHorizontal: 10,
+    backgroundColor: 'white',
+  },
+  logoutButtonPressed: {
+    backgroundColor: 'darkred',
+  },
+  logoutText: {
+    color: 'darkred',
+    fontSize: 14,
+  },
+  logoutTextPressed: {
+    color: 'white',
+  },
+
+  loginButton: {
+    borderWidth: 1,
+    borderColor: '#000',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginHorizontal: 5,
+    backgroundColor: 'white',
+  },
+  loginButtonPressed: {
+    backgroundColor: '#000',
+  },
+  loginText: {
+    color: '#000',
+    fontSize: 14,
+  },
+  loginTextPressed: {
+    color: '#fff',
+  },
+  registerButton: {
+    borderWidth: 1,
+    borderColor: '#1c9b25ef',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: 'white',
+  },
+  registerButtonPressed: {
+    backgroundColor: '#1c9b25ef',
+  },
+  registerText: {
+    color: '#1c9b25ef',
+    fontSize: 14,
+  },
+  registerTextPressed: {
+    color: '#fff',
+  },
+  menuButton: {
+    borderWidth: 1,
+    borderColor: '#000',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    backgroundColor: 'white',
+  },
+  menuButtonPressed: {
+    backgroundColor: '#000',
+  },
+  menuText: {
+    fontSize: 18,
+    color: '#000',
+  },
+  menuTextPressed: {
+    color: '#fff',
+  },
+  menu: {
+    position: 'absolute',
+    left: 0,
+    width: '100%',
+    backgroundColor: '#fff',
+    zIndex: 100,
+    elevation: 20,
+    borderRightWidth: 1,
+
+  },
+  menuItem: {
+    width: '100%',
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: '#000',
   },
-  navText: {
-    color: "#FFF",
+  menuItemText: {
     fontSize: 16,
   },
-  logoutButton: {
-    marginTop: 20,
-    backgroundColor: "#333",
-    borderRadius: 5,
-    borderBottomWidth: 0,
+  
+  overlayPressable: {
+    flex: 1,
   },
 });
+
+export default Sidebar;
