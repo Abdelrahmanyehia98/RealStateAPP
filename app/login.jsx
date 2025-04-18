@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import auth from "../firebase.js"
+import Sidebar from "../components/Sidebar";
+
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -61,19 +63,24 @@ export default function LoginScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
+            <Sidebar />
             <View style={styles.innerContainer}>
-                <Text style={styles.title}>Login</Text>
+                <Text style={styles.title}>Login Now:</Text>
 
+                <Text style={styles.label}>Email</Text>
                 <TextInput
                     style={styles.input}
-                    placeholder="Email"
+                    placeholder="alex@mail.com"
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
                     accessibilityLabel="Email input"
+
                 />
+
+                <Text style={styles.label}>Password</Text>
 
                 <TextInput
                     style={styles.input}
@@ -84,27 +91,31 @@ export default function LoginScreen() {
                     accessibilityLabel="Password input"
                 />
 
-                <TouchableOpacity
-                    style={[
-                        styles.button,
-                        (isLoading || !email || !password) && styles.disabledButton
-                    ]}
+                <View style={styles.btnContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.button,
+                            (isLoading || !email || !password) && styles.disabledButton
+                        ]}
 
-                    onPress={handleLogin}
-                    disabled={isLoading || !email || !password}
-                    accessibilityRole="button"
-                >
-                    <Text style={styles.buttonText}>
-                        {isLoading ? "Logging in..." : "Login"}
-                    </Text>
-                </TouchableOpacity>
+                        onPress={handleLogin}
+                        disabled={isLoading || !email || !password}
+                        accessibilityRole="button"
+                    >
+                        <Text style={styles.buttonText}>
+                            Submit
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-                <TouchableOpacity
-                    style={styles.signUpLink}
-                    onPress={() => router.push("/signup")}
-                >
-                    <Text style={styles.signUpText}>Don't have an account? Sign up</Text>
-                </TouchableOpacity>
+                <View style={styles.registerLinkContainer}>
+                    <Text style={styles.signUpText}>If you don't have an account, </Text>
+                    <Pressable onPress={() => router.push("/signup")}>
+                        <Text style={styles.signUpLink}>Register Now</Text>
+                    </Pressable>
+                </View>
+
+
 
                 {errorMessage ? (
                     <View style={styles.errorContainer}>
@@ -118,73 +129,95 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+    registerLinkContainer: {
+        width: "100%",
+
+        flexDirection: "row",
+
+        alignItems: 'center',
+        marginVertical:10,
+        gap: 4,
+
+    },
     errorContainer: {
-        backgroundColor: "#330000",
+        backgroundColor: "#f8b4b453",
         borderRadius: 8,
-        padding: 10,
+        padding: 20,
         marginTop: 15,
         width: "100%",
         borderWidth: 1,
-        borderColor: "#FF4C4C",
+        borderColor: "rgb(248 180 180)",
     },
 
     errorText: {
-        color: "#FF4C4C",
-        fontSize: 14,
+        color: "#9b1c1cef",
+        fontSize: 16,
         textAlign: "center",
+    },
+    label: {
+        fontSize: 16,
+        lineHeight: 20,
+        color: "#210800",
     },
     container: {
         flex: 1,
-        backgroundColor: "#121212",
+        backgroundColor: "#fff",
+
     },
     innerContainer: {
         flex: 1,
         justifyContent: "center",
-        alignItems: "center",
+        // alignItems: "center",
         paddingHorizontal: 20,
     },
     title: {
         fontSize: 28,
         fontWeight: "bold",
         marginBottom: 30,
-        color: "#FFD700",
+        color: "#000",
     },
     input: {
         width: "100%",
         height: 50,
-        backgroundColor: "#2D2D2D",
-        borderColor: "#333",
+        backgroundColor: "#f9fafb",
+        borderColor: "#d1d5db",
         borderWidth: 1,
         borderRadius: 8,
         paddingHorizontal: 15,
         marginBottom: 20,
-        color: "#FFF",
+        color: "#757575",
         fontSize: 16,
     },
-    button: {
+    btnContainer: {
         width: "100%",
-        backgroundColor: "#333",
-        paddingVertical: 15,
-        borderRadius: 8,
-        alignItems: "center",
+        alignItems: "flex-end",
+
+    },
+    button: {
         borderWidth: 1,
-        borderColor: "#FFD700",
+        borderColor: '#1c9b25ef',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        backgroundColor: 'white',
+
     },
     disabledButton: {
         // backgroundColor: "#555",
-        borderColor: "#777",
-        opacity: 0.6,
+        // borderColor: "#777",
+        opacity: 0.3,
     },
     buttonText: {
-        color: "#FFD700",
+        color: '#1c9b25ef',
         fontSize: 18,
-        fontWeight: "bold",
+        // fontWeight: "bold",
     },
     signUpLink: {
-        marginTop: 20,
+        // marginTop: 20,
+        color: "#1c9b25ef",
     },
     signUpText: {
-        color: "#007bff",
+        color: "#210800",
         fontSize: 14,
     },
 });
