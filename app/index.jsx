@@ -75,8 +75,8 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <Sidebar />
-       <View style={styles.header}>
+
+      <View style={styles.header}>
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
@@ -148,7 +148,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    // backgroundColor: "#121212",
   },
   mainContent: {
     flex: 1,
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1E1E1E",
+    // backgroundColor: "#1E1E1E",
     paddingVertical: 15,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     top: 50,
-    left:30,
+    left: 30,
     backgroundColor: "#2D2D2D",
     borderRadius: 8,
     marginHorizontal: 5,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   cartButton: {
     padding: 8,
     position: "relative",
-    top:13,
+    top: 13,
   },
   cartBadge: {
     position: "absolute",

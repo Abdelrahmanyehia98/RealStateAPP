@@ -6,7 +6,7 @@ import Sidebar from "../components/Sidebar";
 const AboutScreen = () => {
   return (
     <ScrollView style={styles.container}>
-      <Sidebar/>
+
       <View style={styles.header}>
         <Image
           source={require('../assets/logo.png')} 

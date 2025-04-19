@@ -1,31 +1,33 @@
 import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  Pressable, 
-  StyleSheet, 
-  Image, 
-  SafeAreaView, 
-  Animated, 
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Image,
+  SafeAreaView,
+  Animated,
   Dimensions,
 } from 'react-native';
 import { useRouter } from "expo-router";
-import { useRoute } from '@react-navigation/native';
+import { usePathname } from 'expo-router';
 
 const Sidebar = () => {
-  
+
   const router = useRouter();
-  let route =useRoute().name
+const [route, setRoute] = useState(usePathname().split('/').pop())
+
+
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const windowWidth = Dimensions.get('window').width;
-  const translateX = useRef(new Animated.Value(2*windowWidth)).current;
+  const translateX = useRef(new Animated.Value(2 * windowWidth)).current;
 
   const toggleMenu = () => {
-  
-  // Handle menu toggle animation
 
-    
+    // Handle menu toggle animation
+
+
     if (isMenuOpened) {
       Animated.parallel([
         Animated.timing(translateX, {
@@ -41,7 +43,7 @@ const Sidebar = () => {
           duration: 300,
           useNativeDriver: true,
         }),
-  
+
       ]).start();
     }
     setIsMenuOpened(!isMenuOpened);
@@ -49,17 +51,17 @@ const Sidebar = () => {
 
   // Menu items data
   const menuItems = [
-    {title: "Home", path: "/",name:"index" },
-    {title: "About", path: "/About" ,name:"About" },
-    {title: "Admin", path: "/About" ,name:"Admin" },
-    {title: "Profile", path: "/About" ,name:"Profile" },
-    {title: "Sell", path: "/About",name:"Sell" },
+    { title: "Home", path: "/", name: "index" , isActive:true},
+    { title: "About", path: "/About", name: "About",isActive:false},
+    { title: "Admin", path: "/About", name: "Admin" ,isActive:false},
+    { title: "Profile", path: "/About", name: "Profile" ,isActive:false},
+    { title: "Sell", path: "/About", name: "Sell" ,isActive:false},
   ];
 
   return (
     <>
       {/* Header */}
-      <SafeAreaView 
+      <SafeAreaView
         style={styles.safeArea}
         onLayout={(event) => {
           const { height } = event.nativeEvent.layout;
@@ -76,8 +78,8 @@ const Sidebar = () => {
           </View>
 
           <View style={styles.authButtons}>
-                {/* Logout Button */}
-             {/* <Pressable
+            {/* Logout Button */}
+            {/* <Pressable
               style={({ pressed }) => [
                 styles.logoutButton,
                 pressed && styles.logoutButtonPressed,
@@ -134,42 +136,44 @@ const Sidebar = () => {
         </View>
       </SafeAreaView>
 
-    
+
 
       {/* Sidebar Menu */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.menu,
-          { 
+          {
             transform: [{ translateX }],
             top: headerHeight,
-         
+
           }
         ]}
       >
         {menuItems.map((item) => (
-          <Pressable 
+          <Pressable
             key={item.name}
             onPress={() => {
               router.push(item.path);
+              setRoute(item.name)
+      
               toggleMenu();
-           
+
             }}
             style={styles.menuItem}
           >
-            <Text style={[styles.menuItemText,route===item.name && styles.activeItem]}>{item.title}</Text>
+            <Text style={[styles.menuItemText, route==item.name && styles.activeItem]}>{item.title}</Text>
           </Pressable>
         ))}
-        
-        
+
+
       </Animated.View>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  activeItem:{
-    fontWeight:'bold'
+  activeItem: {
+    fontWeight: 'bold'
   },
   safeArea: {
     backgroundColor: '#fff',
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 10,
   },
-  
+
   // Logout Button Styles
   logoutButton: {
     borderWidth: 1,
@@ -298,7 +302,7 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
   },
-  
+
   overlayPressable: {
     flex: 1,
   },

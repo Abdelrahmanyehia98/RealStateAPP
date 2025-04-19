@@ -63,7 +63,7 @@ export default function LoginScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
-            <Sidebar />
+
             <View style={styles.innerContainer}>
                 <Text style={styles.title}>Login Now:</Text>
 
