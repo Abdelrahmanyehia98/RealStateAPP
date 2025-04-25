@@ -1,12 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import Sidebar from "../components/Sidebar";
+
 
 const AboutScreen = () => {
   return (
     <>
-      <Sidebar/>
       <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={
