@@ -1,19 +1,35 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import Sidebar from "../components/Sidebar";
+
 
 const AboutScreen = () => {
   return (
-    <ScrollView style={styles.container}>
-
+    <>
+      <ScrollView style={styles.container}>
       <View style={styles.header}>
+        <View style={
+         {
+          justifyContent:'center',
+          alignItems:'flex-end'
+         }
+        }>
         <Image
-          source={require('../assets/logo.png')} 
+          source={require('./../assets/Screenshot 2024-12-10 025803.png')} 
           style={styles.logo}
         />
-        <Text style={styles.appName}>DreamHome</Text>
+        </View>
+        <View  style={
+         { 
+          justifyContent:'center',
+          alignItems:'flex-start'
+         }
+        }>
+  
+        <Text style={styles.appName}>Realestate</Text>
         <Text style={styles.tagline}>Find Your Perfect Property</Text>
+        </View>
+     
       </View>
 
       
@@ -21,7 +37,7 @@ const AboutScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About Our App</Text>
         <Text style={styles.description}>
-          DreamHome is a comprehensive real estate platform designed to simplify your property search. 
+          Realestate is a comprehensive real estate platform designed to simplify your property search. 
           Whether you're looking to buy, rent, or sell, our app connects you with the best properties 
           and real estate professionals in your area.
         </Text>
@@ -33,7 +49,7 @@ const AboutScreen = () => {
         <Text style={styles.sectionTitle}>Key Features</Text>
         
         <View style={styles.featureItem}>
-          <Ionicons name="search" size={24} color="#4a90e2" />
+          <Ionicons name="search" size={24} color="#29A132" />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Advanced Search</Text>
             <Text style={styles.featureDesc}>Filter properties by location, price, bedrooms, and more.</Text>
@@ -41,7 +57,7 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <MaterialIcons name="virtual-tour" size={24} color="#4a90e2" />
+          <MaterialIcons name="virtual-tour" size={24} color="#29A132" />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Virtual Tours</Text>
             <Text style={styles.featureDesc}>Explore properties with 360° virtual tours from anywhere.</Text>
@@ -49,7 +65,7 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <Ionicons name="notifications" size={24} color="#4a90e2" />
+          <Ionicons name="notifications" size={24} color="#29A132" />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Instant Alerts</Text>
             <Text style={styles.featureDesc}>Get notified when new properties match your criteria.</Text>
@@ -57,7 +73,7 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <FontAwesome name="handshake-o" size={24} color="#4a90e2" />
+          <FontAwesome name="handshake-o" size={24} color="#29A132" />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Agent Connect</Text>
             <Text style={styles.featureDesc}>Connect directly with trusted real estate agents.</Text>
@@ -70,7 +86,7 @@ const AboutScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Our Company</Text>
         <Text style={styles.description}>
-          Founded in 2020, DreamHome Technologies has revolutionized the real estate industry with 
+          Founded in 2020, Realestate Technologies has revolutionized the real estate industry with 
           innovative technology solutions. We partner with thousands of brokers and agents nationwide 
           to bring you the most comprehensive property listings.
         </Text>
@@ -122,7 +138,7 @@ const AboutScreen = () => {
             style={styles.contactText}
             onPress={() => Linking.openURL('https://www.facebook.com')}
           >
-            www.dreamhome.com
+            www.Realestate.com
           </Text>
         </View>
         
@@ -135,38 +151,40 @@ const AboutScreen = () => {
       
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2023 DreamHome Technologies. All rights reserved.</Text>
+        <Text style={styles.footerText}>© 2024 Realestate Technologies. All rights reserved.</Text>
         <View style={styles.socialIcons}>
           <Ionicons 
             name="logo-facebook" 
             size={24} 
-            color="#4a90e2" 
+            color="#29A132" 
             onPress={() => Linking.openURL('https://facebook.com')}
           />
           <Ionicons 
             name="logo-twitter" 
             size={24} 
-            color="#4a90e2" 
+            color="#29A132" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://twitter.com')}
           />
           <Ionicons 
             name="logo-instagram" 
             size={24} 
-            color="#4a90e2" 
+            color="#29A132" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://instagram.com')}
           />
           <Ionicons 
             name="logo-linkedin" 
             size={24} 
-            color="#4a90e2" 
+            color="#29A132" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://linkedin.com')}
           />
         </View>
       </View>
     </ScrollView>
+    </>
+ 
   );
 };
 
@@ -177,7 +195,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
+   flex:1,
+   flexDirection:'row',
     alignItems: 'center',
+    justifyContent:'center',
     paddingVertical: 30,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -248,7 +269,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#4a90e2',
+    color: '#29A132',
   },
   statLabel: {
     fontSize: 14,
@@ -286,4 +307,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AboutScreen;
+export default AboutScreen;

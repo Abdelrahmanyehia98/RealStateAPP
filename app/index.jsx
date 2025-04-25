@@ -1,310 +1,281 @@
-import { useState } from "react";
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, TextInput, FlatList, Alert } from "react-native";
-import Sidebar from "../components/Sidebar";
-import { MaterialIcons, FontAwesome, Ionicons } from "@expo/vector-icons";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  FlatList,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
 
-const products = [
+const screenWidth = Dimensions.get("window").width;
+const cardWidth = (screenWidth - 48) / 2;
+
+const properties = [
   {
-    id: 1,
-    name: "Wireless Earbuds",
-    price: 59.99,
-    originalPrice: 79.99,
-    rating: 4.5,
-    reviews: 1245,
-    image: require("../assets/earbuds.jpg")
+    id: "1",
+    title: "Luxury Villa",
+    location: "Maadi",
+    price: 2000000,
+    type: "buy",
+    propertyType: "villa",
+    bedrooms: 4,
+    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
   },
   {
-    id: 2,
-    name: "Smart Watch",
-    price: 129.99,
-    originalPrice: 159.99,
-    rating: 4.2,
-    reviews: 892,
-    image: require("../assets/smartWatch.jpg")
+    id: "2",
+    title: "Downtown Apartment",
+    location: "Zamalek",
+    price: 850000,
+    type: "buy",
+    propertyType: "apartment",
+    bedrooms: 2,
+    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
   },
   {
-    id: 3,
-    name: "Bluetooth Speaker",
-    price: 45.99,
-    originalPrice: 59.99,
-    rating: 4.7,
-    reviews: 2103,
-    image: require("../assets/speakers.jpg")
+    id: "3",
+    title: "Beach House",
+    location: "Haram",
+    price: 1500000,
+    type: "buy",
+    propertyType: "house",
+    bedrooms: 3,
+    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
   },
   {
-    id: 4,
-    name: "4K Smart TV",
-    price: 499.99,
-    originalPrice: 599.99,
-    rating: 4.8,
-    reviews: 3567,
-    image: require("../assets/tv.jpg")
+    id: "4",
+    title: "Office Space",
+    location: "Downtown",
+    price: 1200000,
+    type: "rent",
+    propertyType: "office",
+    bedrooms: 0,
+    image: "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
+  },
+  {
+    id: "5",
+    title: "Retail Shop",
+    location: "Mohandesen",
+    price: 950000,
+    type: "rent",
+    propertyType: "shop",
+    bedrooms: 0,
+    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095",
   },
 ];
 
-export default function HomeScreen() {
+export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [cart, setCart] = useState([]);
+  const [selectedType, setSelectedType] = useState("any");
+  const [selectedProperty, setSelectedProperty] = useState("any");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [filteredProperties, setFilteredProperties] = useState(properties);
 
-  const addToCart = (product) => {
-    setCart([...cart, product]);
-    Alert.alert("Added to Cart", `${product.name} was added to your cart`);
+  const handleSearch = () => {
+    const filtered = properties.filter((property) => {
+      const matchesSearch =
+        !searchQuery ||
+        property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        property.location.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesType = selectedType === "any" || property.type === selectedType;
+      const matchesProperty = selectedProperty === "any" || property.propertyType === selectedProperty;
+      const matchesMinPrice = minPrice === "" || property.price >= parseInt(minPrice);
+      const matchesMaxPrice = maxPrice === "" || property.price <= parseInt(maxPrice);
+      const matchesBedrooms = bedrooms === "" || property.bedrooms == parseInt(bedrooms);
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesProperty &&
+        matchesMinPrice &&
+        matchesMaxPrice &&
+        matchesBedrooms
+      );
+    });
+
+    setFilteredProperties(filtered);
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    handleSearch();
+  }, [searchQuery, selectedType, selectedProperty, minPrice, maxPrice, bedrooms]);
+
+  const renderProperty = ({ item }) => (
+    <View style={styles.card}>
+      <Image source={{ uri: item.image }} style={styles.image} />
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.location}>{item.location}</Text>
+      <Text style={styles.price}>${item.price.toLocaleString()}</Text>
+    </View>
   );
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<FontAwesome key={i} name="star" size={16} color="#FFD700" />);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<FontAwesome key={i} name="star-half-o" size={16} color="#FFD700" />);
-      } else {
-        stars.push(<FontAwesome key={i} name="star-o" size={16} color="#FFD700" />);
-      }
-    }
-    return stars;
-  };
-
   return (
-    <View style={styles.container}>
-      {/* Header */}
-
-      <View style={styles.header}>
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search ...."
-            placeholderTextColor="#999"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <TouchableOpacity style={styles.searchButton}>
-            <MaterialIcons name="search" size={24} color="#FFD700" />
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity style={styles.cartButton}>
-          <FontAwesome name="shopping-cart" size={24} color="#FFD700" />
-          {cart.length > 0 && (
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>{cart.length}</Text>
-            </View>
-          )}
+    <ScrollView style={styles.container}>
+      {/* Search Bar */}
+      <View style={styles.searchSection}>
+        <TextInput
+          style={styles.input}
+          placeholder="Search by location or title"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+          <Text style={styles.searchButtonText}>Search</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Store Banner */}
-      <View style={styles.bannerContainer}>
-        <Text style={styles.storeName}>STORE</Text>
-        <Text style={styles.storeTagline}>Premium Tech at Golden Prices</Text>
+      {/* Filters Row (Type + Property) */}
+      <View style={styles.filterRow}>
+        <View style={styles.filterHalf}>
+          <Text>Type</Text>
+          <Picker selectedValue={selectedType} onValueChange={(value) => setSelectedType(value)}>
+            <Picker.Item label="Any" value="any" />
+            <Picker.Item label="Buy" value="buy" />
+            <Picker.Item label="Rent" value="rent" />
+          </Picker>
+        </View>
+
+        <View style={styles.filterHalf}>
+          <Text>Property</Text>
+          <Picker selectedValue={selectedProperty} onValueChange={(value) => setSelectedProperty(value)}>
+            <Picker.Item label="Any" value="any" />
+            <Picker.Item label="Apartment" value="apartment" />
+            <Picker.Item label="Villa" value="villa" />
+            <Picker.Item label="House" value="house" />
+            <Picker.Item label="Shop" value="shop" />
+            <Picker.Item label="Office" value="office" />
+          </Picker>
+        </View>
       </View>
 
-      {/* Products Grid */}
+      {/* Filters (Price & Bedrooms) */}
+      <View style={styles.filterRow}>
+        <View style={styles.filterHalf}>
+          <Text>Min Price</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Any"
+            keyboardType="numeric"
+            value={minPrice}
+            onChangeText={setMinPrice}
+          />
+        </View>
+
+        <View style={styles.filterHalf}>
+          <Text>Max Price</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Any"
+            keyboardType="numeric"
+            value={maxPrice}
+            onChangeText={setMaxPrice}
+          />
+        </View>
+      </View>
+
+      <View style={styles.filter}>
+        <Text>Bedrooms</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Any"
+          keyboardType="numeric"
+          value={bedrooms}
+          onChangeText={setBedrooms}
+        />
+      </View>
+
+      {/* Property Grid */}
       <FlatList
-        data={filteredProducts}
+        data={filteredProperties}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProperty}
         numColumns={2}
-        contentContainerStyle={styles.productsGrid}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <Image source={item.image} style={styles.productImage} />
-            <View style={styles.productDetails}>
-              <Text style={styles.productName} numberOfLines={2}>{item.name}</Text>
-
-              <View style={styles.ratingContainer}>
-                {renderStars(item.rating)}
-                <Text style={styles.ratingText}>{item.rating}</Text>
-              </View>
-
-              <Text style={styles.reviewsText}>{item.reviews.toLocaleString()} ratings</Text>
-
-              <View style={styles.priceContainer}>
-                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-                <Text style={styles.originalPrice}>${item.originalPrice.toFixed(2)}</Text>
-              </View>
-
-              <Text style={styles.deliveryBadge}>Dols Premium Delivery</Text>
-
-              <TouchableOpacity
-                style={styles.addToCartButton}
-                onPress={() => addToCart(item)}
-              >
-                <Text style={styles.addToCartText}>Add to Cart</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+        contentContainerStyle={styles.list}
+        scrollEnabled={false} 
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
+
+  searchSection: {
+    flexDirection: "row", 
+    marginBottom: 16 
+  },
+  input: {
     flex: 1,
-    // backgroundColor: "#121212",
-  },
-  mainContent: {
-    flex: 1,
-    zIndex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    // backgroundColor: "#1E1E1E",
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  menuButton: {
-    padding: 8,
-    marginRight: 10,
-  },
-  searchContainer: {
-    flex: 1,
-    flexDirection: "row",
-    top: 50,
-    left: 30,
-    backgroundColor: "#2D2D2D",
+    borderWidth: 1,
+    borderColor: "#ccc",
     borderRadius: 8,
-    marginHorizontal: 5,
-    height: 40,
-    alignItems: 'center',
-  },
-  searchInput: {
-    flex: 1,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: "#FFF",
+    padding: 10,
+    marginRight: 8,
   },
   searchButton: {
-    padding: 8,
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  cartButton: {
-    padding: 8,
-    position: "relative",
-    top: 13,
-  },
-  cartBadge: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    backgroundColor: "#FFD700",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cartBadgeText: {
-    color: "#000",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  bannerContainer: {
-    top: 40,
-    backgroundColor: "#1E1E1E",
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  storeName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFD700",
-    letterSpacing: 2,
-  },
-  storeTagline: {
-    fontSize: 14,
-    color: "#AAA",
-    marginTop: 5,
-  },
-  productsGrid: {
-    padding: 50,
-  },
-  productCard: {
-    flex: 1,
-    margin: 5,
-    backgroundColor: "#1E1E1E",
-    borderRadius: 10,
-    overflow: "hidden",
-    maxWidth: "48%",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-  productImage: {
-    width: "100%",
-    height: 150,
-    resizeMode: "contain",
-    backgroundColor: "#2D2D2D",
-  },
-  productDetails: {
+    backgroundColor: "#28a745",
     padding: 12,
-  },
-  productName: {
-    fontSize: 14,
-    marginBottom: 5,
-    height: 40,
-    color: "#FFF",
-    fontWeight: '500',
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  ratingText: {
-    marginLeft: 5,
-    color: "#FFD700",
-    fontSize: 14,
-  },
-  reviewsText: {
-    color: "#AAA",
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  price: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFD700",
-  },
-  originalPrice: {
-    fontSize: 12,
-    textDecorationLine: "line-through",
-    color: "#777",
-    marginLeft: 5,
-  },
-  deliveryBadge: {
-    fontSize: 12,
-    color: "#FFD700",
-    marginBottom: 10,
-  },
-  addToCartButton: {
-    backgroundColor: "#333",
     borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FFD700",
+    justifyContent: "center",
   },
-  addToCartText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#FFD700",
+  searchButtonText: { 
+    color: "#fff", 
+    fontWeight: "bold"
+  },
+
+  filters: { 
+    marginBottom: 20 
+  },
+  filter: { 
+    marginBottom: 12 
+  },
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  filterHalf: { 
+    width: "48%" 
+  },
+
+  card: {
+    width: cardWidth,
+    backgroundColor: "#f9f9f9",
+    borderRadius: 10,
+    marginBottom: 16,
+    marginRight: 16,
+    overflow: "hidden",
+    borderWidth: 2,       
+    borderColor: 'black',
+  },
+  image: { 
+    width: "100%", 
+    height: 120 
+  },
+  title: { 
+    fontWeight: "bold", 
+    fontSize: 16, 
+    marginTop: 8, 
+    paddingHorizontal: 8 
+  },
+  location: { 
+    color: "#777", 
+    paddingHorizontal: 8 
+  },
+  price: { 
+    color: "#28a745", 
+    fontWeight: "bold", 
+    padding: 8 
+  },
+
+  list: { 
+    paddingBottom: 100 
   },
 });
