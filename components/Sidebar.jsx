@@ -55,7 +55,7 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
     { title: "About", path: "/About", name: "About",isActive:false},
     { title: "Admin", path: "/About", name: "Admin" ,isActive:false},
     { title: "Profile", path: "/About", name: "Profile" ,isActive:false},
-    { title: "Sell", path: "/About", name: "Sell" ,isActive:false},
+    { title: "Sell", path: "/sell", name: "Sell" ,isActive:false},
   ];
 
   return (
