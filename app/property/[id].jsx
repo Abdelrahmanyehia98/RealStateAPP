@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    TextInput,
-    Modal,
-    Share,
-    Alert,
-    Dimensions
-} from 'react-native';
+import { View,Text,Image,StyleSheet,ScrollView,TouchableOpacity, TextInput,Modal, Share,Alert,Dimensions} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
