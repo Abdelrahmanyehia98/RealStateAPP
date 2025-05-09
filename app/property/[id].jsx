@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,14 @@ import {
   Share,
   Alert,
   Dimensions,
-  FlatList,
-  ActivityIndicator
+  FlatList
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
 const screenWidth = Dimensions.get('window').width;
 
-// Initial properties data
-const initialProperties = [
+const properties = [
   {
     id: "1",
     title: "Luxury Villa",
@@ -176,7 +173,7 @@ const initialProperties = [
   }
 ];
 
-const PropertyDetails = () => {
+export default function PropertyDetails() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
@@ -188,76 +185,20 @@ const PropertyDetails = () => {
     message: ''
   });
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [properties, setProperties] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [property, setProperty] = useState(null);
-  const [similarProperties, setSimilarProperties] = useState([]);
 
-  // Load properties and favorites from storage
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // Load properties from storage
-        const storedProperties = await AsyncStorage.getItem('properties');
-        let propertiesData = [];
-        
-        if (storedProperties) {
-          propertiesData = JSON.parse(storedProperties);
-        } else {
-          // Use initial data if no properties exist in storage
-          propertiesData = initialProperties;
-          await AsyncStorage.setItem('properties', JSON.stringify(propertiesData));
-        }
+  const property = properties.find(p => p.id === id);
+  const similarProperties = properties.filter(p =>
+    p.id !== id &&
+    (p.propertyType === property?.propertyType || p.type === property?.type)
+  ).slice(0, 3);
 
-        setProperties(propertiesData);
-        
-        // Find current property
-        const currentProperty = propertiesData.find(p => p.id === id);
-        setProperty(currentProperty);
-
-        // Find similar properties
-        if (currentProperty) {
-          const similar = propertiesData.filter(p =>
-            p.id !== id &&
-            (p.propertyType === currentProperty.propertyType || p.type === currentProperty.type)
-          ).slice(0, 3);
-          setSimilarProperties(similar);
-        }
-
-        // Check if property is favorite
-        const favorites = await AsyncStorage.getItem('favorites');
-        if (favorites) {
-          const favIds = JSON.parse(favorites);
-          setIsFavorite(favIds.includes(id));
-        }
-
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [id]);
-
-  const toggleFavorite = async () => {
-    try {
-      const favorites = await AsyncStorage.getItem('favorites');
-      let favIds = favorites ? JSON.parse(favorites) : [];
-      
-      if (isFavorite) {
-        favIds = favIds.filter(favId => favId !== id);
-      } else {
-        favIds.push(id);
-      }
-      
-      await AsyncStorage.setItem('favorites', JSON.stringify(favIds));
-      setIsFavorite(!isFavorite);
-    } catch (error) {
-      console.error('Error updating favorites:', error);
-    }
-  };
+  if (!property) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.notFoundText}>Property not found</Text>
+      </View>
+    );
+  }
 
   const handleShare = async () => {
     try {
@@ -317,21 +258,18 @@ const PropertyDetails = () => {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#29A132" />
-      </View>
-    );
-  }
-
-  if (!property) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.notFoundText}>Property not found</Text>
-      </View>
-    );
-  }
+  const handleAddToCart = () => {
+    if (!global.cartItems) {
+      global.cartItems = [];
+    }
+    if (!global.cartItems.some((cartItem) => cartItem.id === property.id)) {
+      global.cartItems = [...global.cartItems, property];
+      Alert.alert('Success', `${property.title} added to cart!`);
+      console.log(`Added ${property.title} to cart!`, global.cartItems);
+    } else {
+      Alert.alert('Info', `${property.title} is already in cart!`);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -347,7 +285,7 @@ const PropertyDetails = () => {
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={toggleFavorite}
+            onPress={() => setIsFavorite(!isFavorite)}
           >
             <Ionicons
               name={isFavorite ? "heart" : "heart-outline"}
@@ -440,6 +378,14 @@ const PropertyDetails = () => {
             </View>
           </View>
 
+          {/* Add to Cart Button */}
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddToCart}
+          >
+            <Text style={styles.addButtonText}>Add to Cart</Text>
+          </TouchableOpacity>
+
           {/* Similar Properties */}
           {similarProperties.length > 0 && (
             <View style={styles.section}>
@@ -455,6 +401,7 @@ const PropertyDetails = () => {
             </View>
           )}
         </View>
+        
       </ScrollView>
 
       {/* Contact Button */}
@@ -519,22 +466,18 @@ const PropertyDetails = () => {
             >
               <Text style={styles.submitButtonText}>Send Message</Text>
             </TouchableOpacity>
+            
           </View>
         </View>
       </Modal>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   notFoundText: {
     fontSize: 18,
@@ -804,6 +747,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
+  addButton: {
+    backgroundColor: '#29A132',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginVertical: 15,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });
-
-export default PropertyDetails;
