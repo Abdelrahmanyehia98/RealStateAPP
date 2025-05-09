@@ -1,80 +1,75 @@
-import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Image, 
-  ScrollView, 
-  TextInput, 
-  FlatList, 
-  TouchableOpacity, 
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
   Dimensions,
-  Linking
-} from "react-native";
-import { Picker } from "@react-native-picker/picker";
+  Linking,
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// تعريف البيانات العامة للسلة
+if (!global.cartItems) {
+  global.cartItems = [];
+}
+
 const properties = [
   {
-    id: "1",
-    title: "Luxury Villa",
-    location: "Maadi",
-    price: 2000000,
-    type: "buy",
-    propertyType: "villa",
-    bedrooms: 4,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+    id: '1',
+    title: 'Luxury Villa',
+    location: 'Maadi',
+    price: '200000',
+    type: 'buy',
+    propertyType: 'villa',
+    bedrooms: '4',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
   },
   {
-    id: "2",
-    title: "Downtown Apartment",
-    location: "Zamalek",
-    price: 850000,
-    type: "buy",
-    propertyType: "apartment",
-    bedrooms: 2,
-    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+    id: '2',
+    title: 'Downtown Apartment',
+    location: 'Zamalek',
+    price: '85000',
+    type: 'buy',
+    propertyType: 'apartment',
+    bedrooms: '2',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
   },
   {
-    id: "3",
-    title: "Beach House",
-    location: "Haram",
-    price: 1500000,
-    type: "buy",
-    propertyType: "house",
-    bedrooms: 3,
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
+    id: '3',
+    title: 'Beach House',
+    location: 'Haram',
+    price: '150000',
+    type: 'buy',
+    propertyType: 'house',
+    bedrooms: '3',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
   },
   {
-    id: "4",
-    title: "Office Space",
-    location: "Downtown",
-    price: 1200000,
-    type: "rent",
-    propertyType: "office",
-    bedrooms: 0,
-    image: "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
+    id: '4',
+    title: 'Office Space',
+    location: 'Downtown',
+    price: '120000',
+    type: 'rent',
+    propertyType: 'office',
+    bedrooms: '0',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
   },
   {
-    id: "5",
-    title: "Retail Shop",
-    location: "Mohandesen",
-    price: 950000,
-    type: "rent",
-    propertyType: "shop",
-    bedrooms: 0,
-    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095",
-  },
-  {
-    id: "6",
-    title: "Retail Shop",
-    location: "Mohandesen",
-    price: 950000,
-    type: "rent",
-    propertyType: "shop",
-    bedrooms: 0,
-    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095",
+    id: '5',
+    title: 'Retail Shop',
+    location: 'Mohandeseen',
+    price: '95000',
+    type: 'rent',
+    propertyType: 'shop',
+    bedrooms: '0',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
   },
 ];
 
@@ -88,6 +83,7 @@ export default function App() {
   const [bedrooms, setBedrooms] = useState("");
   const [filteredProperties, setFilteredProperties] = useState(properties);
   const [numColumns, setNumColumns] = useState(getNumColumns());
+  const [cartItems, setCartItems] = useState(global.cartItems);
 
   function getNumColumns() {
     const screenWidth = Dimensions.get("window").width;
@@ -102,6 +98,10 @@ export default function App() {
     });
     return () => subscription?.remove();
   }, []);
+
+  useEffect(() => {
+    setCartItems(global.cartItems);
+  }, [global.cartItems]);
 
   const handleSearch = () => {
     const filtered = properties.filter((property) => {
@@ -156,9 +156,12 @@ export default function App() {
     >
       <Image source={{ uri: item.image }} style={styles.cardImage} />
       <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{item.title}</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardTitle}>{item.title}</Text>
+         
+        </View>
         <View style={styles.cardLocation}>
-          <Ionicons name="location-sharp" size={16} color="#29A132" />
+          <Ionicons name="location-sharp" size={16} color="#27ae60" />
           <Text style={styles.cardLocationText}>{item.location}</Text>
         </View>
         <Text style={styles.cardPrice}>${item.price.toLocaleString()}</Text>
@@ -299,21 +302,21 @@ export default function App() {
           <Ionicons 
             name="logo-facebook" 
             size={24} 
-            color="#29A132" 
+            color="#27ae60" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://facebook.com')}
           />
           <Ionicons 
             name="logo-twitter" 
             size={24} 
-            color="#29A132" 
+            color="#27ae60" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://twitter.com')}
           />
           <Ionicons 
             name="logo-instagram" 
             size={24} 
-            color="#29A132" 
+            color="#27ae60" 
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://instagram.com')}
           />
@@ -326,68 +329,55 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
+    backgroundColor: '#f5f5f5',
   },
   header: {
-    paddingVertical: 25,
+    padding: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 20,
+    borderBottomColor: '#ddd',
   },
   appName: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#333',
   },
   tagline: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#666',
     marginTop: 5,
   },
   searchSection: {
-    marginBottom: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#f0f0f0',
     borderRadius: 10,
-    paddingHorizontal: 15,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    paddingHorizontal: 10,
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    height: 50,
+    height: 40,
     fontSize: 16,
-    color: '#34495e',
+    color: '#333',
   },
   filtersSection: {
-    marginBottom: 25,
-    backgroundColor: '#f9f9f9',
     padding: 20,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#fff',
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#2c3e50',
+    color: '#27ae60',
     marginBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: '#29A132',
-    paddingBottom: 5,
   },
   filterRow: {
     flexDirection: 'row',
@@ -396,71 +386,94 @@ const styles = StyleSheet.create({
   },
   filterGroup: {
     flex: 1,
-    marginBottom: 15,
+    marginHorizontal: 5,
   },
   filterLabel: {
     fontSize: 16,
-    color: '#34495e',
-    marginBottom: 8,
-    fontWeight: '500',
+    color: '#333',
+    marginBottom: 5,
   },
   pickerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
     overflow: 'hidden',
-    elevation: 1,
   },
   picker: {
-    height: 50,
-    width: '100%',
-    color: '#34495e',
+    height: 40,
+    color: '#333',
   },
   inputContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 1,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 10,
   },
   input: {
-    height: 50,
-    paddingHorizontal: 15,
+    height: 40,
+    paddingHorizontal: 10,
     fontSize: 16,
-    color: '#34495e',
+    color: '#333',
   },
   listingsSection: {
-    marginBottom: 30,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
   list: {
     paddingBottom: 20,
   },
   card: {
     flex: 1,
-    margin: 8,
     backgroundColor: '#fff',
     borderRadius: 10,
+    margin: 10,
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
   },
   cardImage: {
-    width: '100%',
+    width: '100',
     height: 150,
   },
   cardContent: {
     padding: 15,
   },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 5,
+    color: '#333',
+  },
+  cartBadge: {
+    position: 'relative',
+    backgroundColor: '#27ae60',
+    borderRadius: 20,
+    padding: 5,
+  },
+  badgeCount: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#e74c3c',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeCountText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   cardLocation: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginTop: 5,
   },
   cardLocationText: {
     fontSize: 14,
@@ -468,38 +481,34 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   cardPrice: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#29A132',
-    marginBottom: 10,
+    color: '#27ae60',
+    marginVertical: 5,
   },
   cardDetails: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     marginTop: 5,
   },
   cardDetail: {
     fontSize: 12,
     color: '#7f8c8d',
-    marginRight: 15,
-    marginBottom: 5,
   },
   footer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingVertical: 25,
+    padding: 20,
+    backgroundColor: '#fff',
     alignItems: 'center',
-    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
   },
   footerText: {
     fontSize: 14,
-    color: '#7f8c8d',
-    marginBottom: 15,
-    textAlign: 'center',
+    color: '#666',
   },
   socialIcons: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    marginTop: 10,
   },
   socialIcon: {
     marginHorizontal: 10,
