@@ -54,7 +54,7 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
     { title: "Home", path: "/", name: "index" , isActive:true},
     { title: "About", path: "/About", name: "About",isActive:false},
     { title: "Admin", path: "/Admin", name: "Admin" ,isActive:false},
-    { title: "Profile", path: "/../Profile", name: "Profile" ,isActive:false},
+    { title: "Profile", path: "/Profile", name: "profile" ,isActive:false},
     { title: "Sell", path: "/sell", name: "Sell" ,isActive:false},
     { title: "Cart", path: "/cart", name: "Cart" ,isActive:false},
     
@@ -193,19 +193,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoImage: {
-    width: 40,
+    width: 30,
     height: 40,
     resizeMode: 'contain',
     marginRight: 5,
   },
   logoText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
     color: '#000',
   },
   authButtons: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 5,
+    marginHorizontal: 4,
   },
 
   // Logout Button Styles
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
   },
   loginText: {
     color: '#000',
-    fontSize: 14,
+    fontSize: 12,
   },
   loginTextPressed: {
     color: '#fff',
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
   },
   registerText: {
     color: '#1c9b25ef',
-    fontSize: 14,
+    fontSize: 12,
   },
   registerTextPressed: {
     color: '#fff',

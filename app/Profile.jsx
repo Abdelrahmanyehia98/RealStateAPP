@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -13,46 +13,25 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-export default function ProfileScreen() {
+//components
+export default function Profile() {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
     const [showAddPostModal, setShowAddPostModal] = useState(false);
     const [editingPost, setEditingPost] = useState(null);
-    
-    // Mock user data - replace with actual user data from your backend
+    //user data
     const [userData, setUserData] = useState({
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        phone: '+1 234 567 8900',
-        location: 'New York, USA',
-        bio: 'Real estate enthusiast with 5 years of experience in property management.',
-        listings: 12,
-        savedProperties: 8
+        name: '',
+        email: '',
+        phone: '',
+        location: '',
+        bio: '',
+        listings: 0,
+        savedProperties: 0
     });
 
-    // Mock posts data - replace with actual posts from your backend
-    const [posts, setPosts] = useState([
-        {
-            id: 1,
-            title: 'Modern Apartment in Downtown',
-            description: 'Beautiful 2-bedroom apartment with city views',
-            image: null,
-            price: '$250,000',
-            location: 'New York, NY',
-            date: '2024-03-15'
-        },
-        {
-            id: 2,
-            title: 'Luxury Villa with Pool',
-            description: 'Spacious 4-bedroom villa with private pool',
-            image: null,
-            price: '$750,000',
-            location: 'Los Angeles, CA',
-            date: '2024-03-14'
-        }
-    ]);
-
+    const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState({
         title: '',
         description: '',
@@ -62,6 +41,31 @@ export default function ProfileScreen() {
     });
 
     const [editedData, setEditedData] = useState({...userData});
+
+
+
+
+
+
+
+ 
+
+    // Add useEffect to refetch data when auth state changes
+  
+
+    const uploadImage = async (uri, path) => {
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const storageRef = ref(storage, path);
+            await uploadBytes(storageRef, blob);
+            const downloadURL = await getDownloadURL(storageRef);
+            return downloadURL;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    };
 
     const handleImagePick = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -78,7 +82,36 @@ export default function ProfileScreen() {
         });
 
         if (!result.canceled && result.assets[0]) {
-            setProfileImage(result.assets[0].uri);
+            setLoading(true);
+            try {
+                const user = auth.currentUser;
+                if (!user) {
+                    Alert.alert('Error', 'Please login to update your profile picture');
+                    return;
+                }
+
+                const imageUri = result.assets[0].uri;
+                const imagePath = `profile_images/${user.uid}/${Date.now()}`;
+                const downloadURL = await uploadImage(imageUri, imagePath);
+
+                // Update user profile in Firestore
+                await updateDoc(doc(db, 'users', user.uid), {
+                    profileImage: downloadURL
+                });
+
+                // Update user profile in Firebase Auth
+                await updateProfile(user, {
+                    photoURL: downloadURL
+                });
+
+                setProfileImage(downloadURL);
+                Alert.alert('Success', 'Profile picture updated successfully!');
+            } catch (error) {
+                console.error('Error updating profile picture:', error);
+                Alert.alert('Error', 'Failed to update profile picture');
+            } finally {
+                setLoading(false);
+            }
         }
     };
 
@@ -97,80 +130,65 @@ export default function ProfileScreen() {
         });
 
         if (!result.canceled && result.assets[0]) {
+            const imageUri = result.assets[0].uri;
             if (editingPost) {
-                setEditingPost({...editingPost, image: result.assets[0].uri});
+                setEditingPost({...editingPost, image: imageUri});
             } else {
-                setNewPost({...newPost, image: result.assets[0].uri});
+                setNewPost({...newPost, image: imageUri});
             }
         }
     };
 
-    const handleAddPost = () => {
+    const handleAddPost = async () => {
         if (!newPost.title || !newPost.description || !newPost.price || !newPost.location) {
             Alert.alert('Error', 'Please fill in all required fields');
             return;
         }
 
-        const post = {
-            id: Date.now(),
-            ...newPost,
-            date: new Date().toISOString().split('T')[0]
-        };
-
-        setPosts([post, ...posts]);
-        setNewPost({
-            title: '',
-            description: '',
-            price: '',
-            location: '',
-            image: null
-        });
-        setShowAddPostModal(false);
-    };
-
-    const handleEditPost = () => {
-        if (!editingPost.title || !editingPost.description || !editingPost.price || !editingPost.location) {
-            Alert.alert('Error', 'Please fill in all required fields');
-            return;
-        }
-
-        setPosts(posts.map(post => 
-            post.id === editingPost.id ? editingPost : post
-        ));
-        setEditingPost(null);
-    };
-
-    const handleDeletePost = (postId) => {
-        Alert.alert(
-            'Delete Post',
-            'Are you sure you want to delete this post?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { 
-                    text: 'Delete', 
-                    style: 'destructive',
-                    onPress: () => {
-                        setPosts(posts.filter(post => post.id !== postId));
-                    }
-                }
-            ]
-        );
-    };
-
-    const handleSave = async () => {
         setLoading(true);
         try {
-            // Here you would typically send the updated data to your backend
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-            setUserData(editedData);
-            setIsEditing(false);
-            Alert.alert('Success', 'Profile updated successfully!');
+            const user = auth.currentUser;
+            if (!user) {
+                Alert.alert('Error', 'Please login to add a post');
+                return;
+            }
+
+            let imageURL = null;
+            if (newPost.image) {
+                const imagePath = `post_images/${user.uid}/${Date.now()}`;
+                imageURL = await uploadImage(newPost.image, imagePath);
+            }
+
+            const postData = {
+                ...newPost,
+                image: imageURL,
+                userId: user.uid,
+                createdAt: new Date().toISOString(),
+            };
+
+            const docRef = await addDoc(collection(db, 'posts'), postData);
+            const newPostWithId = { id: docRef.id, ...postData };
+            
+            setPosts([newPostWithId, ...posts]);
+            setNewPost({
+                title: '',
+                description: '',
+                price: '',
+                location: '',
+                image: null
+            });
+            setShowAddPostModal(false);
         } catch (error) {
-            Alert.alert('Error', 'Failed to update profile. Please try again.');
+            console.error('Error adding post:', error);
+            Alert.alert('Error', 'Failed to add post');
         } finally {
             setLoading(false);
         }
     };
+
+
+
+
 
     const renderEditMode = () => (
         <View style={styles.editContainer}>
@@ -400,7 +418,7 @@ export default function ProfileScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity 
                             style={[styles.modalButton, styles.saveButton]}
-                            onPress={handleEditPost}
+                            // onPress={handleEditPost}
                         >
                             <Text style={styles.buttonText}>Save Changes</Text>
                         </TouchableOpacity>

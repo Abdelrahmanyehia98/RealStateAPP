@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-
+// Error-boundary imports with fallbacks
 let ImagePicker;
 let Checkbox = Switch;
 let Picker;
@@ -77,44 +77,22 @@ const SellScreen = () => {
             return;
         }
 
-        Alert.alert(
-            'Choose Photo Source',
-            '',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Gallery', onPress: () => pickImage('library') },
-                { text: 'Camera', onPress: () => pickImage('camera') },
-            ]
-        );
-    };
-
-    const pickImage = async (sourceType) => {
         try {
-            let permissionResult;
-            if (sourceType === 'camera') {
-                permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-            } else {
-                permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            }
-
-            if (permissionResult.status !== 'granted') {
-                Alert.alert('Permission Denied', `We need access to your ${sourceType === 'camera' ? 'camera' : 'media library'} to upload images.`);
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'We need access to your media to upload images.');
                 return;
             }
 
-            const pickerOptions = {
+            const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ImagePicker.MediaTypeOptions.Images,
                 allowsEditing: true,
                 aspect: [4, 3],
                 quality: 0.8,
-            };
+            });
 
-            const pickerResult = sourceType === 'camera'
-                ? await ImagePicker.launchCameraAsync(pickerOptions)
-                : await ImagePicker.launchImageLibraryAsync(pickerOptions);
-
-            if (!pickerResult.canceled && pickerResult.assets?.[0]?.uri) {
-                const selectedImage = pickerResult.assets[0];
+            if (!result.canceled && result.assets?.[0]?.uri) {
+                const selectedImage = result.assets[0];
                 if (selectedImage.fileSize > 5000000) {
                     Alert.alert('Image too large', 'Please select an image smaller than 5MB');
                     return;
@@ -123,7 +101,7 @@ const SellScreen = () => {
             }
         } catch (error) {
             console.error('Image picker error:', error);
-            Alert.alert('Error', 'Failed to capture image. Please try again.');
+            Alert.alert('Error', 'Failed to select image. Please try again.');
         }
     };
 
