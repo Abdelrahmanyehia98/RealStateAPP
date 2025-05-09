@@ -13,44 +13,50 @@ import {
   ActivityIndicator,
   Linking
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons, MaterialIcons, Feather, FontAwesome } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AdminDashboard = () => {
-  const router = useRouter();
+  // State management
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentProperty, setCurrentProperty] = useState(null);
-  const [formData, setFormData] = useState({
+  
+  // Default property template
+  const defaultProperty = {
     id: '',
     title: '',
     location: '',
-    price: '',
+    price: 0,
     type: 'buy',
     propertyType: 'apartment',
-    bedrooms: '',
-    bathrooms: '',
+    bedrooms: 0,
+    bathrooms: 0,
     area: '',
     description: '',
     features: '',
-    image: '',
+    image: 'https://via.placeholder.com/300',
     images: []
-  });
+  };
 
-  // Load properties from storage
+  const [formData, setFormData] = useState({...defaultProperty});
+
+  // Load properties with error handling
   useEffect(() => {
     const loadProperties = async () => {
       try {
         const storedProperties = await AsyncStorage.getItem('properties');
         if (storedProperties) {
-          setProperties(JSON.parse(storedProperties));
+          const parsed = JSON.parse(storedProperties);
+          setProperties(Array.isArray(parsed) ? parsed : []);
         }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading properties:', error);
+      } catch (err) {
+        console.error('Load error:', err);
+        setError('Failed to load properties. Please try again.');
+      } finally {
         setLoading(false);
       }
     };
@@ -58,57 +64,63 @@ const AdminDashboard = () => {
     loadProperties();
   }, []);
 
+  // Save properties with validation
   const saveProperties = async (updatedProperties) => {
     try {
+      if (!Array.isArray(updatedProperties)) {
+        throw new Error('Invalid data format');
+      }
       await AsyncStorage.setItem('properties', JSON.stringify(updatedProperties));
       setProperties(updatedProperties);
-    } catch (error) {
-      console.error('Error saving properties:', error);
+      return true;
+    } catch (err) {
+      console.error('Save error:', err);
+      setError('Failed to save data');
+      return false;
     }
   };
 
+  // Property actions
   const handleAddProperty = () => {
     setFormData({
-      id: Date.now().toString(),
-      title: '',
-      location: '',
-      price: '',
-      type: 'buy',
-      propertyType: 'apartment',
-      bedrooms: '',
-      bathrooms: '',
-      area: '',
-      description: '',
-      features: '',
-      image: '',
-      images: []
+      ...defaultProperty,
+      id: Date.now().toString()
     });
     setShowAddModal(true);
+    setError(null);
   };
 
   const handleEditProperty = (property) => {
+    if (!property) return;
+    
     setCurrentProperty(property);
     setFormData({
       ...property,
-      features: property.features.join(', ')
+      features: Array.isArray(property.features) ? 
+        property.features.join(', ') : 
+        String(property.features || '')
     });
     setShowEditModal(true);
   };
 
   const handleDeleteProperty = async (id) => {
+    if (!id) return;
+
     Alert.alert(
-      'Delete Property',
+      'Confirm Delete',
       'Are you sure you want to delete this property?',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
+        { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           onPress: async () => {
-            const updatedProperties = properties.filter(p => p.id !== id);
-            await saveProperties(updatedProperties);
+            try {
+              const updated = properties.filter(p => p?.id !== id);
+              const success = await saveProperties(updated);
+              if (!success) throw new Error('Delete failed');
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete property');
+            }
           },
           style: 'destructive'
         }
@@ -116,516 +128,577 @@ const AdminDashboard = () => {
     );
   };
 
+  // Form submission with validation
   const handleSubmit = async () => {
-    if (!formData.title || !formData.location || !formData.price) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
+    try {
+      // Validate required fields
+      if (!formData?.title?.trim()) {
+        throw new Error('Title is required');
+      }
+      if (!formData?.location?.trim()) {
+        throw new Error('Location is required');
+      }
+      if (isNaN(formData.price) || formData.price < 0) {
+        throw new Error('Please enter a valid price');
+      }
+
+      // Prepare data
+      const propertyData = {
+        ...formData,
+        title: formData.title.trim(),
+        location: formData.location.trim(),
+        price: Math.max(0, Number(formData.price)),
+        bedrooms: Math.max(0, Number(formData.bedrooms)),
+        bathrooms: Math.max(0, Number(formData.bathrooms)),
+        features: typeof formData.features === 'string' ? 
+          formData.features.split(',').map(f => f.trim()).filter(f => f) : 
+          [],
+        images: Array.isArray(formData.images) ? 
+          formData.images.filter(img => img) : 
+          [formData.image].filter(Boolean)
+      };
+
+      // Save data
+      let updatedProperties;
+      if (showAddModal) {
+        updatedProperties = [...properties, propertyData];
+      } else {
+        updatedProperties = properties.map(p => 
+          p?.id === currentProperty?.id ? propertyData : p
+        );
+      }
+
+      const success = await saveProperties(updatedProperties);
+      if (success) {
+        setShowAddModal(false);
+        setShowEditModal(false);
+      }
+    } catch (err) {
+      setError(err.message || 'Submission failed');
     }
-
-    const propertyData = {
-      ...formData,
-      price: Number(formData.price),
-      bedrooms: Number(formData.bedrooms),
-      bathrooms: Number(formData.bathrooms),
-      features: formData.features.split(',').map(f => f.trim()).filter(f => f),
-      images: formData.images.length > 0 ? formData.images : [formData.image]
-    };
-
-    let updatedProperties;
-    if (showAddModal) {
-      updatedProperties = [...properties, propertyData];
-    } else {
-      updatedProperties = properties.map(p => 
-        p.id === currentProperty.id ? propertyData : p
-      );
-    }
-
-    await saveProperties(updatedProperties);
-    setShowAddModal(false);
-    setShowEditModal(false);
   };
 
-  const renderPropertyItem = ({ item }) => (
-    <View style={styles.propertyItem}>
-      <Image source={{ uri: item.image }} style={styles.propertyImage} />
-      <View style={styles.propertyContent}>
-        <Text style={styles.propertyTitle}>{item.title}</Text>
-        <View style={styles.propertyMeta}>
-          <Text style={styles.propertyLocation}>
-            <Ionicons name="location-sharp" size={14} color="#666" /> {item.location}
+  // Property item component
+  const PropertyItem = ({ item }) => {
+    if (!item) return null;
+
+    return (
+      <View style={styles.propertyItem}>
+        <Image 
+          source={{ uri: item.image || defaultProperty.image }} 
+          style={styles.propertyImage}
+          onError={() => console.log('Image load failed')}
+        />
+        <View style={styles.propertyContent}>
+          <Text style={styles.propertyTitle} numberOfLines={1}>
+            {item.title || 'Untitled Property'}
           </Text>
-          <Text style={styles.propertyPrice}>${item.price.toLocaleString()}</Text>
-        </View>
-        <View style={styles.propertyDetails}>
-          <View style={styles.detailItem}>
-            <MaterialIcons name="king-bed" size={16} color="#29A132" />
-            <Text style={styles.detailText}>{item.bedrooms} Beds</Text>
+          
+          <View style={styles.propertyMeta}>
+            <Text style={styles.propertyLocation} numberOfLines={1}>
+              <Ionicons name="location-sharp" size={14} color="#666" /> 
+              {item.location || 'No location'}
+            </Text>
+            <Text style={styles.propertyPrice}>
+              ${(item.price || 0).toLocaleString()}
+            </Text>
           </View>
-          <View style={styles.detailItem}>
-            <MaterialIcons name="bathtub" size={16} color="#29A132" />
-            <Text style={styles.detailText}>{item.bathrooms} Baths</Text>
+          
+          <View style={styles.propertyDetails}>
+            <DetailItem icon="king-bed" value={`${item.bedrooms || 0} Beds`} />
+            <DetailItem icon="bathtub" value={`${item.bathrooms || 0} Baths`} />
+            <DetailItem icon="aspect-ratio" value={item.area || 'N/A'} />
           </View>
-          <View style={styles.detailItem}>
-            <MaterialIcons name="aspect-ratio" size={16} color="#29A132" />
-            <Text style={styles.detailText}>{item.area}</Text>
+          
+          <View style={styles.propertyActions}>
+            <ActionButton 
+              icon="edit" 
+              label="Edit" 
+              color="#29A132"
+              onPress={() => handleEditProperty(item)}
+            />
+            <ActionButton 
+              icon="trash-2" 
+              label="Delete" 
+              color="#ff4444"
+              onPress={() => handleDeleteProperty(item.id)}
+            />
           </View>
-        </View>
-        <View style={styles.propertyActions}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => handleEditProperty(item)}
-          >
-            <Feather name="edit" size={18} color="#29A132" />
-            <Text style={styles.actionButtonText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.deleteButton]}
-            onPress={() => handleDeleteProperty(item.id)}
-          >
-            <Feather name="trash-2" size={18} color="#ff4444" />
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
-          </TouchableOpacity>
         </View>
       </View>
+    );
+  };
+
+  // Reusable components
+  const DetailItem = ({ icon, value }) => (
+    <View style={styles.detailItem}>
+      <MaterialIcons name={icon} size={16} color="#29A132" />
+      <Text style={styles.detailText}>{value}</Text>
     </View>
   );
 
+  const ActionButton = ({ icon, label, color, onPress }) => (
+    <TouchableOpacity 
+      style={[styles.actionButton, { backgroundColor: `${color}20` }]}
+      onPress={onPress}
+    >
+      <Feather name={icon} size={18} color={color} />
+      <Text style={[styles.actionButtonText, { color }]}>{label}</Text>
+    </TouchableOpacity>
+  );
+
+  // Loading state
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#29A132" />
       </View>
     );
   }
 
+  // Error state
+  if (error && properties.length === 0) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.primaryButton}
+          onPress={() => window.location.reload()}
+        >
+          <Text style={styles.buttonText}>Reload</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Text style={styles.appName}>Admin Dashboard</Text>
-          <Text style={styles.tagline}>Manage Properties</Text>
-        </View>
+        <Text style={styles.headerTitle}>Property Management</Text>
+        <Text style={styles.headerSubtitle}>Admin Dashboard</Text>
       </View>
 
-      {/* Stats Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Property Overview</Text>
-        
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{properties.length}</Text>
-            <Text style={styles.statLabel}>Total Properties</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {properties.filter(p => p.type === 'buy').length}
-            </Text>
-            <Text style={styles.statLabel}>For Sale</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>
-              {properties.filter(p => p.type === 'rent').length}
-            </Text>
-            <Text style={styles.statLabel}>For Rent</Text>
-          </View>
-        </View>
+      {/* Stats Cards */}
+      <View style={styles.cardRow}>
+        <StatCard 
+          value={properties.length} 
+          label="Total Properties" 
+          icon="home"
+        />
+        <StatCard 
+          value={properties.filter(p => p?.type === 'buy').length} 
+          label="For Sale" 
+          icon="tag"
+        />
+        <StatCard 
+          value={properties.filter(p => p?.type === 'rent').length} 
+          label="For Rent" 
+          icon="key"
+        />
       </View>
 
-      {/* Quick Actions */}
+      {/* Action Buttons */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        
-        <View style={styles.featureItem}>
-          <Feather name="plus" size={24} color="#29A132" style={styles.featureIcon} />
-          <View style={styles.featureText}>
-            <TouchableOpacity onPress={handleAddProperty}>
-              <Text style={styles.featureTitle}>Add New Property</Text>
-              <Text style={styles.featureDesc}>Create a new property listing</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        <View style={styles.featureItem}>
-          <Ionicons name="mail" size={24} color="#29A132" style={styles.featureIcon} />
-          <View style={styles.featureText}>
-            <TouchableOpacity onPress={() => Linking.openURL('mailto:support@realestate.com')}>
-              <Text style={styles.featureTitle}>Contact Support</Text>
-              <Text style={styles.featureDesc}>Get help from our support team</Text>
-            </TouchableOpacity>
-          </View>
+        <Text style={styles.sectionTitle}>Actions</Text>
+        <View style={styles.buttonRow}>
+          <ActionButtonLarge 
+            icon="plus" 
+            label="Add Property" 
+            onPress={handleAddProperty}
+          />
+          <ActionButtonLarge 
+            icon="mail" 
+            label="Contact Support" 
+            onPress={() => Linking.openURL('mailto:support@example.com')}
+          />
         </View>
       </View>
 
       {/* Properties List */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>All Properties</Text>
-        <Text style={styles.sectionSubtitle}>Showing {properties.length} properties</Text>
-        
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Properties</Text>
+          <Text style={styles.sectionSubtitle}>
+            {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+          </Text>
+        </View>
+
         {properties.length > 0 ? (
           <FlatList
             data={properties}
-            renderItem={renderPropertyItem}
-            keyExtractor={item => item.id}
+            renderItem={({ item }) => <PropertyItem item={item} />}
+            keyExtractor={item => item?.id || Math.random().toString()}
             scrollEnabled={false}
-            contentContainerStyle={styles.propertyList}
+            contentContainerStyle={styles.listContainer}
           />
         ) : (
-          <View style={styles.emptyState}>
-            <Feather name="home" size={48} color="#bdc3c7" />
-            <Text style={styles.emptyText}>No properties found</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={handleAddProperty}
-            >
-              <Text style={styles.addButtonText}>Add Your First Property</Text>
-            </TouchableOpacity>
-          </View>
+          <EmptyState onAddProperty={handleAddProperty} />
         )}
       </View>
 
-      {/* Add/Edit Property Modal */}
-      <Modal
+      {/* Property Form Modal */}
+      <PropertyFormModal
         visible={showAddModal || showEditModal}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {showAddModal ? 'Add New Property' : 'Edit Property'}
-              </Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => {
-                  setShowAddModal(false);
-                  setShowEditModal(false);
-                }}
-              >
-                <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalScroll}>
-              <Text style={styles.inputLabel}>Title*</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Beautiful Villa in Maadi"
-                placeholderTextColor="#999"
-                value={formData.title}
-                onChangeText={(text) => setFormData({ ...formData, title: text })}
-              />
-
-              <Text style={styles.inputLabel}>Location*</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Maadi, Cairo"
-                placeholderTextColor="#999"
-                value={formData.location}
-                onChangeText={(text) => setFormData({ ...formData, location: text })}
-              />
-
-              <Text style={styles.inputLabel}>Price*</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="2000000"
-                placeholderTextColor="#999"
-                keyboardType="numeric"
-                value={formData.price.toString()}
-                onChangeText={(text) => setFormData({ ...formData, price: text })}
-              />
-              
-              <View style={styles.row}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Type</Text>
-                  <View style={styles.select}>
-                    <TouchableOpacity
-                      style={[
-                        styles.selectOption,
-                        formData.type === 'buy' && styles.selectedOption
-                      ]}
-                      onPress={() => setFormData({ ...formData, type: 'buy' })}
-                    >
-                      <Text style={formData.type === 'buy' ? styles.selectedOptionText : styles.optionText}>
-                        Buy
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.selectOption,
-                        formData.type === 'rent' && styles.selectedOption
-                      ]}
-                      onPress={() => setFormData({ ...formData, type: 'rent' })}
-                    >
-                      <Text style={formData.type === 'rent' ? styles.selectedOptionText : styles.optionText}>
-                        Rent
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Property Type</Text>
-                  <View style={styles.select}>
-                    <TouchableOpacity
-                      style={[
-                        styles.selectOption,
-                        formData.propertyType === 'apartment' && styles.selectedOption
-                      ]}
-                      onPress={() => setFormData({ ...formData, propertyType: 'apartment' })}
-                    >
-                      <Text style={formData.propertyType === 'apartment' ? styles.selectedOptionText : styles.optionText}>
-                        Apartment
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.selectOption,
-                        formData.propertyType === 'villa' && styles.selectedOption
-                      ]}
-                      onPress={() => setFormData({ ...formData, propertyType: 'villa' })}
-                    >
-                      <Text style={formData.propertyType === 'villa' ? styles.selectedOptionText : styles.optionText}>
-                        Villa
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-
-              <View style={styles.row}>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Bedrooms</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="3"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric"
-                    value={formData.bedrooms.toString()}
-                    onChangeText={(text) => setFormData({ ...formData, bedrooms: text })}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Bathrooms</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="2"
-                    placeholderTextColor="#999"
-                    keyboardType="numeric"
-                    value={formData.bathrooms.toString()}
-                    onChangeText={(text) => setFormData({ ...formData, bathrooms: text })}
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Area</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="120 sqm"
-                    placeholderTextColor="#999"
-                    value={formData.area}
-                    onChangeText={(text) => setFormData({ ...formData, area: text })}
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.inputLabel}>Main Image URL</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/image.jpg"
-                placeholderTextColor="#999"
-                value={formData.image}
-                onChangeText={(text) => setFormData({ ...formData, image: text })}
-              />
-
-              <Text style={styles.inputLabel}>Additional Image URLs (comma separated)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                placeholderTextColor="#999"
-                value={formData.images.join(', ')}
-                onChangeText={(text) => setFormData({ ...formData, images: text.split(',').map(url => url.trim()) })}
-              />
-
-              <Text style={styles.inputLabel}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Describe the property..."
-                placeholderTextColor="#999"
-                multiline
-                numberOfLines={4}
-                value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
-              />
-
-              <Text style={styles.inputLabel}>Features (comma separated)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Swimming Pool, Garden, Parking"
-                placeholderTextColor="#999"
-                multiline
-                numberOfLines={2}
-                value={formData.features}
-                onChangeText={(text) => setFormData({ ...formData, features: text })}
-              />
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmit}
-              >
-                <Text style={styles.submitButtonText}>
-                  {showAddModal ? 'Add Property' : 'Update Property'}
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+        mode={showAddModal ? 'add' : 'edit'}
+        formData={formData}
+        setFormData={setFormData}
+        error={error}
+        onSubmit={handleSubmit}
+        onClose={() => {
+          setShowAddModal(false);
+          setShowEditModal(false);
+          setError(null);
+        }}
+      />
     </ScrollView>
   );
 };
 
+// Additional Components
+const StatCard = ({ value, label, icon }) => (
+  <View style={styles.statCard}>
+    <View style={styles.statIcon}>
+      <Feather name={icon} size={20} color="#29A132" />
+    </View>
+    <Text style={styles.statValue}>{value || 0}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+  </View>
+);
+
+const ActionButtonLarge = ({ icon, label, onPress }) => (
+  <TouchableOpacity style={styles.largeActionButton} onPress={onPress}>
+    <Feather name={icon} size={24} color="#29A132" />
+    <Text style={styles.largeActionText}>{label}</Text>
+  </TouchableOpacity>
+);
+
+const EmptyState = ({ onAddProperty }) => (
+  <View style={styles.emptyState}>
+    <Feather name="home" size={48} color="#bdc3c7" />
+    <Text style={styles.emptyText}>No properties found</Text>
+    <TouchableOpacity style={styles.primaryButton} onPress={onAddProperty}>
+      <Text style={styles.buttonText}>Add Property</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubmit, onClose }) => {
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
+            {mode === 'add' ? 'Add New Property' : 'Edit Property'}
+          </Text>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.modalContent}>
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          )}
+
+          <FormField
+            label="Title*"
+            value={formData.title}
+            onChangeText={text => setFormData({...formData, title: text})}
+            placeholder="Property title"
+          />
+
+          <FormField
+            label="Location*"
+            value={formData.location}
+            onChangeText={text => setFormData({...formData, location: text})}
+            placeholder="Property location"
+          />
+
+          <FormField
+            label="Price*"
+            value={String(formData.price)}
+            onChangeText={text => setFormData({...formData, price: text.replace(/[^0-9]/g, '')})}
+            placeholder="0"
+            keyboardType="numeric"
+          />
+
+          <View style={styles.formRow}>
+            <View style={styles.formGroup}>
+              <Text style={styles.inputLabel}>Type</Text>
+              <View style={styles.toggleGroup}>
+                <ToggleButton
+                  label="Buy"
+                  active={formData.type === 'buy'}
+                  onPress={() => setFormData({...formData, type: 'buy'})}
+                />
+                <ToggleButton
+                  label="Rent"
+                  active={formData.type === 'rent'}
+                  onPress={() => setFormData({...formData, type: 'rent'})}
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.inputLabel}>Property Type</Text>
+              <View style={styles.toggleGroup}>
+                <ToggleButton
+                  label="Apartment"
+                  active={formData.propertyType === 'apartment'}
+                  onPress={() => setFormData({...formData, propertyType: 'apartment'})}
+                />
+                <ToggleButton
+                  label="Villa"
+                  active={formData.propertyType === 'villa'}
+                  onPress={() => setFormData({...formData, propertyType: 'villa'})}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formRow}>
+            <FormField
+              label="Bedrooms"
+              value={String(formData.bedrooms)}
+              onChangeText={text => setFormData({...formData, bedrooms: text.replace(/[^0-9]/g, '')})}
+              placeholder="0"
+              keyboardType="numeric"
+              containerStyle={{ flex: 1 }}
+            />
+            <FormField
+              label="Bathrooms"
+              value={String(formData.bathrooms)}
+              onChangeText={text => setFormData({...formData, bathrooms: text.replace(/[^0-9]/g, '')})}
+              placeholder="0"
+              keyboardType="numeric"
+              containerStyle={{ flex: 1 }}
+            />
+            <FormField
+              label="Area"
+              value={formData.area}
+              onChangeText={text => setFormData({...formData, area: text})}
+              placeholder="Sq ft"
+              containerStyle={{ flex: 1 }}
+            />
+          </View>
+
+          <FormField
+            label="Main Image URL"
+            value={formData.image}
+            onChangeText={text => setFormData({...formData, image: text})}
+            placeholder="https://example.com/image.jpg"
+          />
+
+          <FormField
+            label="Additional Images (comma separated)"
+            value={formData.images.join(', ')}
+            onChangeText={text => setFormData({...formData, images: text.split(',').map(url => url.trim())})}
+            placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+            multiline
+          />
+
+          <FormField
+            label="Description"
+            value={formData.description}
+            onChangeText={text => setFormData({...formData, description: text})}
+            placeholder="Property description"
+            multiline
+            numberOfLines={4}
+          />
+
+          <FormField
+            label="Features (comma separated)"
+            value={formData.features}
+            onChangeText={text => setFormData({...formData, features: text})}
+            placeholder="Swimming pool, Garden, Parking"
+            multiline
+          />
+
+          <TouchableOpacity style={styles.submitButton} onPress={onSubmit}>
+            <Text style={styles.submitButtonText}>
+              {mode === 'add' ? 'Add Property' : 'Update Property'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+};
+
+const FormField = ({ label, value, onChangeText, placeholder, multiline, numberOfLines, keyboardType, containerStyle }) => (
+  <View style={[styles.inputContainer, containerStyle]}>
+    <Text style={styles.inputLabel}>{label}</Text>
+    <TextInput
+      style={[styles.input, multiline && styles.textArea]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor="#999"
+      multiline={multiline}
+      numberOfLines={numberOfLines || 1}
+      keyboardType={keyboardType}
+    />
+  </View>
+);
+
+const ToggleButton = ({ label, active, onPress }) => (
+  <TouchableOpacity
+    style={[styles.toggleButton, active && styles.toggleButtonActive]}
+    onPress={onPress}
+  >
+    <Text style={[styles.toggleButtonText, active && styles.toggleButtonTextActive]}>
+      {label}
+    </Text>
+  </TouchableOpacity>
+);
+
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
+    backgroundColor: '#f8f9fa',
   },
-  loadingContainer: {
+  contentContainer: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    padding: 20,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 30,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  titleContainer: {
-    flex: 1,
-  },
-  appName: {
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
-  tagline: {
+  headerSubtitle: {
     fontSize: 16,
     color: '#7f8c8d',
-    marginTop: 5,
+    marginTop: 4,
   },
-  section: {
-    marginBottom: 30,
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 10,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: '#29A132',
-    paddingBottom: 5,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 5,
-  },
-  statsContainer: {
+  cardRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginBottom: 16,
   },
-  statItem: {
-    alignItems: 'center',
+  statCard: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
     flex: 1,
-    marginHorizontal: 5,
-    elevation: 1,
+    marginHorizontal: 4,
+    elevation: 2,
   },
-  statNumber: {
+  statIcon: {
+    backgroundColor: '#e8f5e9',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#29A132',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
     color: '#7f8c8d',
-    marginTop: 5,
     textAlign: 'center',
   },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+  section: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    elevation: 1,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
   },
-  featureIcon: {
-    marginRight: 15,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-  featureText: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 5,
   },
-  featureDesc: {
+  sectionSubtitle: {
     fontSize: 14,
     color: '#7f8c8d',
-    lineHeight: 20,
   },
-  propertyList: {
-    paddingBottom: 10,
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  largeActionButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#29A132',
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  largeActionText: {
+    color: '#29A132',
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  listContainer: {
+    paddingBottom: 8,
   },
   propertyItem: {
-    flexDirection: 'column',
-    marginBottom: 20,
     backgroundColor: '#fff',
     borderRadius: 10,
+    marginBottom: 12,
     overflow: 'hidden',
     elevation: 1,
   },
   propertyImage: {
     width: '100%',
-    height: 200,
+    height: 180,
   },
   propertyContent: {
-    padding: 15,
+    padding: 16,
   },
   propertyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 5,
+    marginBottom: 8,
   },
   propertyMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   propertyLocation: {
     fontSize: 14,
     color: '#666',
+    flex: 1,
+    marginRight: 8,
   },
   propertyPrice: {
     fontSize: 16,
@@ -635,10 +708,10 @@ const styles = StyleSheet.create({
   propertyDetails: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginVertical: 10,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
+    marginBottom: 12,
   },
   detailItem: {
     flexDirection: 'row',
@@ -647,34 +720,26 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 5,
+    marginLeft: 4,
   },
   propertyActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 10,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
     paddingVertical: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 16,
     borderRadius: 20,
     flex: 1,
-    marginHorizontal: 5,
+    marginHorizontal: 4,
     justifyContent: 'center',
-  },
-  deleteButton: {
-    backgroundColor: '#ffebee',
   },
   actionButtonText: {
     fontSize: 14,
-    color: '#29A132',
-    marginLeft: 5,
-  },
-  deleteButtonText: {
-    color: '#ff4444',
+    fontWeight: '500',
+    marginLeft: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -683,112 +748,122 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#7f8c8d',
-    marginTop: 15,
-    marginBottom: 25,
+    marginTop: 16,
+    marginBottom: 24,
     textAlign: 'center',
   },
-  addButton: {
+  primaryButton: {
     backgroundColor: '#29A132',
     borderRadius: 10,
-    padding: 15,
+    padding: 16,
     alignItems: 'center',
+    minWidth: 200,
   },
-  addButtonText: {
+  buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 16,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '90%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    paddingBottom: 15,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
-  closeButton: {
-    padding: 5,
+  modalContent: {
+    padding: 16,
   },
-  modalScroll: {
-    flex: 1,
+  errorBanner: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    color: '#ff4444',
+    textAlign: 'center',
+  },
+  inputContainer: {
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 14,
     color: '#2c3e50',
-    marginBottom: 5,
     fontWeight: '500',
-  },
-  inputGroup: {
-    marginBottom: 15,
+    marginBottom: 8,
   },
   input: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f8f9fa',
     borderRadius: 10,
-    padding: 15,
-    marginBottom: 15,
+    padding: 14,
     fontSize: 16,
     color: '#333',
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   textArea: {
     height: 100,
     textAlignVertical: 'top',
   },
-  row: {
+  formRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 15,
+    marginBottom: 16,
   },
-  select: {
+  formGroup: {
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  toggleGroup: {
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     overflow: 'hidden',
   },
-  selectOption: {
+  toggleButton: {
     flex: 1,
     padding: 12,
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#f8f9fa',
   },
-  selectedOption: {
+  toggleButtonActive: {
     backgroundColor: '#29A132',
   },
-  optionText: {
+  toggleButtonText: {
     color: '#666',
   },
-  selectedOptionText: {
+  toggleButtonTextActive: {
     color: '#fff',
     fontWeight: 'bold',
   },
   submitButton: {
     backgroundColor: '#29A132',
     borderRadius: 10,
-    padding: 15,
+    padding: 16,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
