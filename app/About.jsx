@@ -2,37 +2,21 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, Linking } from 'react-native';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 
-
 const AboutScreen = () => {
   return (
-    <>
-      <ScrollView style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={
-         {
-          justifyContent:'center',
-          alignItems:'flex-end'
-         }
-        }>
-        <Image
-          source={require('./../assets/Screenshot 2024-12-10 025803.png')} 
-          style={styles.logo}
-        />
+        <View style={styles.logoContainer}>
+          <Image
+            source={require('./../assets/Screenshot 2024-12-10 025803.png')} 
+            style={styles.logo}
+          />
         </View>
-        <View  style={
-         { 
-          justifyContent:'center',
-          alignItems:'flex-start'
-         }
-        }>
-  
-        <Text style={styles.appName}>Realestate</Text>
-        <Text style={styles.tagline}>Find Your Perfect Property</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.appName}>Realestate</Text>
+          <Text style={styles.tagline}>Find Your Perfect Property</Text>
         </View>
-     
       </View>
-
-      
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About Our App</Text>
@@ -43,13 +27,11 @@ const AboutScreen = () => {
         </Text>
       </View>
 
-     
-
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Key Features</Text>
         
         <View style={styles.featureItem}>
-          <Ionicons name="search" size={24} color="#29A132" />
+          <Ionicons name="search" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Advanced Search</Text>
             <Text style={styles.featureDesc}>Filter properties by location, price, bedrooms, and more.</Text>
@@ -57,7 +39,7 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <MaterialIcons name="virtual-tour" size={24} color="#29A132" />
+          <MaterialIcons name="virtual-tour" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Virtual Tours</Text>
             <Text style={styles.featureDesc}>Explore properties with 360° virtual tours from anywhere.</Text>
@@ -65,7 +47,7 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <Ionicons name="notifications" size={24} color="#29A132" />
+          <Ionicons name="notifications" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Instant Alerts</Text>
             <Text style={styles.featureDesc}>Get notified when new properties match your criteria.</Text>
@@ -73,15 +55,13 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.featureItem}>
-          <FontAwesome name="handshake-o" size={24} color="#29A132" />
+          <FontAwesome name="handshake-o" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
             <Text style={styles.featureTitle}>Agent Connect</Text>
             <Text style={styles.featureDesc}>Connect directly with trusted real estate agents.</Text>
           </View>
         </View>
       </View>
-
-     
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Our Company</Text>
@@ -107,23 +87,21 @@ const AboutScreen = () => {
         </View>
       </View>
 
-      
-
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Contact Us</Text>
         
         <View style={styles.contactItem}>
-          <Ionicons name="mail" size={20} color="#666" />
+          <Ionicons name="mail" size={20} color="#29A132" style={styles.contactIcon} />
           <Text 
             style={styles.contactText}
-            onPress={() => Linking.openURL('')}
+            onPress={() => Linking.openURL('mailto:support@gmail.com')}
           >
             support@gmail.com
           </Text>
         </View>
         
         <View style={styles.contactItem}>
-          <Ionicons name="call" size={20} color="#666" />
+          <Ionicons name="call" size={20} color="#29A132" style={styles.contactIcon} />
           <Text 
             style={styles.contactText}
             onPress={() => Linking.openURL('tel:+01001012277')}
@@ -133,22 +111,20 @@ const AboutScreen = () => {
         </View>
         
         <View style={styles.contactItem}>
-          <Ionicons name="globe" size={20} color="#666" />
+          <Ionicons name="globe" size={20} color="#29A132" style={styles.contactIcon} />
           <Text 
             style={styles.contactText}
-            onPress={() => Linking.openURL('https://www.facebook.com')}
+            onPress={() => Linking.openURL('https://www.Realestate.com')}
           >
             www.Realestate.com
           </Text>
         </View>
         
         <View style={styles.contactItem}>
-          <Ionicons name="location" size={20} color="#666" />
+          <Ionicons name="location" size={20} color="#29A132" style={styles.contactIcon} />
           <Text style={styles.contactText}>123 Real Estate Ave, street 100, Ard ellewaa</Text>
         </View>
       </View>
-
-      
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>© 2024 Realestate Technologies. All rights reserved.</Text>
@@ -157,6 +133,7 @@ const AboutScreen = () => {
             name="logo-facebook" 
             size={24} 
             color="#29A132" 
+            style={styles.socialIcon}
             onPress={() => Linking.openURL('https://facebook.com')}
           />
           <Ionicons 
@@ -183,8 +160,6 @@ const AboutScreen = () => {
         </View>
       </View>
     </ScrollView>
-    </>
- 
   );
 };
 
@@ -195,107 +170,142 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-   flex:1,
-   flexDirection:'row',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent:'center',
     paddingVertical: 30,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     marginBottom: 20,
   },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginRight: 15,
+  },
+  titleContainer: {
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    flex: 1,
+  },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 10,
+    borderRadius: 10,
   },
   appName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c3e50',
   },
   tagline: {
     fontSize: 16,
-    color: '#666',
+    color: '#7f8c8d',
     marginTop: 5,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: 30,
+    backgroundColor: '#f9f9f9',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#2c3e50',
     marginBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: '#29A132',
+    paddingBottom: 5,
   },
   description: {
     fontSize: 16,
-    color: '#666',
+    color: '#34495e',
     lineHeight: 24,
     marginBottom: 15,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 15,
+    marginBottom: 20,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    elevation: 1,
+  },
+  featureIcon: {
+    marginRight: 15,
   },
   featureText: {
     flex: 1,
-    marginLeft: 10,
   },
   featureTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 3,
+    color: '#2c3e50',
+    marginBottom: 5,
   },
   featureDesc: {
     fontSize: 14,
-    color: '#666',
+    color: '#7f8c8d',
+    lineHeight: 20,
   },
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 15,
+    marginTop: 20,
   },
   statItem: {
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
     padding: 15,
     borderRadius: 10,
     flex: 1,
     marginHorizontal: 5,
+    elevation: 1,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#29A132',
   },
   statLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#7f8c8d',
     marginTop: 5,
+    textAlign: 'center',
   },
   contactItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+  },
+  contactIcon: {
+    marginRight: 15,
   },
   contactText: {
     fontSize: 16,
-    color: '#666',
-    marginLeft: 10,
+    color: '#34495e',
+    flex: 1,
   },
   footer: {
     borderTopWidth: 1,
     borderTopColor: '#eee',
-    paddingVertical: 20,
+    paddingVertical: 25,
     alignItems: 'center',
+    marginTop: 10,
   },
   footerText: {
     fontSize: 14,
-    color: '#999',
-    marginBottom: 15,
+    color: '#7f8c8d',
+    marginBottom: 20,
     textAlign: 'center',
   },
   socialIcons: {
@@ -303,8 +313,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   socialIcon: {
-    marginLeft: 15,
+    marginHorizontal: 10,
   },
 });
 
-export default AboutScreen;
+export default AboutScreen;
