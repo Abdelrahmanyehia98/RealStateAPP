@@ -1,8 +1,19 @@
 import React, { useState, useEffect } from "react";
-import {View,Text,TextInput,ScrollView,FlatList,Image,StyleSheet,TouchableOpacity,Dimensions,} from "react-native";
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  Image, 
+  ScrollView, 
+  TextInput, 
+  FlatList, 
+  TouchableOpacity, 
+  Dimensions,
+  Linking
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
 
 const properties = [
   {
@@ -68,7 +79,7 @@ const properties = [
 ];
 
 export default function App() {
-   const router = useRouter();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("any");
   const [selectedProperty, setSelectedProperty] = useState("any");
@@ -136,201 +147,361 @@ export default function App() {
   ]);
 
   const renderProperty = ({ item }) => (
-     <TouchableOpacity
+    <TouchableOpacity
       style={styles.card}
       onPress={() => router.push({
         pathname: "/property/[id]",
         params: { id: item.id }
       })}
     >
-
-    <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.location}>{item.location}</Text>
-      <Text style={styles.price}>${item.price.toLocaleString()}</Text>
-    </View>
+      <Image source={{ uri: item.image }} style={styles.cardImage} />
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
+        <View style={styles.cardLocation}>
+          <Ionicons name="location-sharp" size={16} color="#29A132" />
+          <Text style={styles.cardLocationText}>{item.location}</Text>
+        </View>
+        <Text style={styles.cardPrice}>${item.price.toLocaleString()}</Text>
+        <View style={styles.cardDetails}>
+          <Text style={styles.cardDetail}>
+            <Ionicons name="bed" size={14} color="#7f8c8d" /> {item.bedrooms} {item.bedrooms === 1 ? 'Bed' : 'Beds'}
+          </Text>
+          <Text style={styles.cardDetail}>
+            <Ionicons name="home" size={14} color="#7f8c8d" /> {item.propertyType}
+          </Text>
+          <Text style={styles.cardDetail}>
+            <Ionicons name="cash" size={14} color="#7f8c8d" /> {item.type}
+          </Text>
+        </View>
+      </View>
     </TouchableOpacity>
-
   );
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.appName}>Property Listings</Text>
+        <Text style={styles.tagline}>Find your dream property</Text>
+      </View>
+
       <View style={styles.searchSection}>
-        <TextInput
-          style={styles.input}
-          placeholder="Search by location or title"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Search</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.width100}>
-        <View style={styles.width50}>
-          <Text>Type</Text>
-          <View style={styles.input}>
-            <Picker
-              selectedValue={selectedType}
-              onValueChange={(value) => setSelectedType(value)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Any" value="any" />
-              <Picker.Item label="Buy" value="buy" />
-              <Picker.Item label="Rent" value="rent" />
-            </Picker>
-          </View>
-        </View>
-
-        <View style={styles.width50}>
-          <Text>Property</Text>
-          <View style={styles.input}>
-            <Picker
-              selectedValue={selectedProperty}
-              onValueChange={(value) => setSelectedProperty(value)}
-              style={styles.picker}
-            >
-              <Picker.Item label="Any" value="any" />
-              <Picker.Item label="Apartment" value="apartment" />
-              <Picker.Item label="Villa" value="villa" />
-              <Picker.Item label="House" value="house" />
-              <Picker.Item label="Shop" value="shop" />
-              <Picker.Item label="Office" value="office" />
-            </Picker>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.filterRow}>
-        <View style={styles.filterHalf}>
-          <Text>Min Price</Text>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
           <TextInput
-            style={styles.input}
-            placeholder="Any"
-            keyboardType="numeric"
-            value={minPrice}
-            onChangeText={setMinPrice}
-          />
-        </View>
-
-        <View style={styles.filterHalf}>
-          <Text>Max Price</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Any"
-            keyboardType="numeric"
-            value={maxPrice}
-            onChangeText={setMaxPrice}
+            style={styles.searchInput}
+            placeholder="Search by location or title"
+            placeholderTextColor="#7f8c8d"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
         </View>
       </View>
 
-      <View style={styles.filter}>
-        <Text>Bedrooms</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Any"
-          keyboardType="numeric"
-          value={bedrooms}
-          onChangeText={setBedrooms}
+      <View style={styles.filtersSection}>
+        <Text style={styles.sectionTitle}>Filter Properties</Text>
+        
+        <View style={styles.filterRow}>
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Type</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedType}
+                onValueChange={(value) => setSelectedType(value)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Any" value="any" />
+                <Picker.Item label="Buy" value="buy" />
+                <Picker.Item label="Rent" value="rent" />
+              </Picker>
+            </View>
+          </View>
+
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Property</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedProperty}
+                onValueChange={(value) => setSelectedProperty(value)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Any" value="any" />
+                <Picker.Item label="Apartment" value="apartment" />
+                <Picker.Item label="Villa" value="villa" />
+                <Picker.Item label="House" value="house" />
+                <Picker.Item label="Shop" value="shop" />
+                <Picker.Item label="Office" value="office" />
+              </Picker>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.filterRow}>
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Min Price</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Any"
+                placeholderTextColor="#7f8c8d"
+                keyboardType="numeric"
+                value={minPrice}
+                onChangeText={setMinPrice}
+              />
+            </View>
+          </View>
+
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterLabel}>Max Price</Text>
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Any"
+                placeholderTextColor="#7f8c8d"
+                keyboardType="numeric"
+                value={maxPrice}
+                onChangeText={setMaxPrice}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.filterGroup}>
+          <Text style={styles.filterLabel}>Bedrooms</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Any"
+              placeholderTextColor="#7f8c8d"
+              keyboardType="numeric"
+              value={bedrooms}
+              onChangeText={setBedrooms}
+            />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.listingsSection}>
+        <Text style={styles.sectionTitle}>Available Properties</Text>
+        <FlatList
+          key={numColumns}
+          data={filteredProperties}
+          keyExtractor={(item) => item.id}
+          renderItem={renderProperty}
+          numColumns={numColumns}
+          contentContainerStyle={styles.list}
+          scrollEnabled={false}
         />
       </View>
 
-      <FlatList
-        key={numColumns} // ← important fix
-        data={filteredProperties}
-        keyExtractor={(item) => item.id}
-        renderItem={renderProperty}
-        numColumns={numColumns}
-        contentContainerStyle={styles.list}
-        scrollEnabled={false}
-      />
-     
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 Realestate. All rights reserved.</Text>
+        <View style={styles.socialIcons}>
+          <Ionicons 
+            name="logo-facebook" 
+            size={24} 
+            color="#29A132" 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://facebook.com')}
+          />
+          <Ionicons 
+            name="logo-twitter" 
+            size={24} 
+            color="#29A132" 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://twitter.com')}
+          />
+          <Ionicons 
+            name="logo-instagram" 
+            size={24} 
+            color="#29A132" 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://instagram.com')}
+          />
+        </View>
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff", padding: 16 },
-  picker: {
-    height: 20,
-    width: "100%",
-  },
-  width100: {
-    width: "100%",
-    flexDirection: "row",
-  },
-  width50: {
-    width: "50%",
-  },
-  searchSection: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  input: {
+  container: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginRight: 8,
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
   },
-  searchButton: {
-    backgroundColor: "#28a745",
-    padding: 12,
-    borderRadius: 8,
-    justifyContent: "center",
-  },
-  searchButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  filters: {
+  header: {
+    paddingVertical: 25,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
     marginBottom: 20,
   },
-  filter: {
-    marginBottom: 12,
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  tagline: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    marginTop: 5,
+  },
+  searchSection: {
+    marginBottom: 20,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+    color: '#34495e',
+  },
+  filtersSection: {
+    marginBottom: 25,
+    backgroundColor: '#f9f9f9',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 15,
+    borderBottomWidth: 2,
+    borderBottomColor: '#29A132',
+    paddingBottom: 5,
   },
   filterRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
-  filterHalf: {
-    width: "50%",
+  filterGroup: {
+    flex: 1,
+    marginBottom: 15,
+  },
+  filterLabel: {
+    fontSize: 16,
+    color: '#34495e',
+    marginBottom: 8,
+    fontWeight: '500',
+  },
+  pickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
+    elevation: 1,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    color: '#34495e',
+  },
+  inputContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 1,
+  },
+  input: {
+    height: 50,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: '#34495e',
+  },
+  listingsSection: {
+    marginBottom: 30,
+  },
+  list: {
+    paddingBottom: 20,
   },
   card: {
     flex: 1,
-    minWidth: 0,
-    backgroundColor: "#f9f9f9",
-    borderRadius: 10,
     margin: 8,
-    overflow: "hidden",
-    borderWidth: 2,
-    borderColor: "black",
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
-  image: {
-    width: "100%",
-    height: 120,
+  cardImage: {
+    width: '100%',
+    height: 150,
   },
-  title: {
-    fontWeight: "bold",
-    fontSize: 16,
-    marginTop: 8,
-    paddingHorizontal: 8,
+  cardContent: {
+    padding: 15,
   },
-  location: {
-    color: "#777",
-    paddingHorizontal: 8,
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 5,
   },
-  price: {
-    color: "#28a745",
-    fontWeight: "bold",
-    padding: 8,
+  cardLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
-  list: {
-    paddingBottom: 100,
+  cardLocationText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginLeft: 5,
+  },
+  cardPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#29A132',
+    marginBottom: 10,
+  },
+  cardDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 5,
+  },
+  cardDetail: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginRight: 15,
+    marginBottom: 5,
+  },
+  footer: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingVertical: 25,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  socialIcons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  socialIcon: {
+    marginHorizontal: 10,
   },
 });
