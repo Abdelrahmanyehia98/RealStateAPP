@@ -53,10 +53,11 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
   const menuItems = [
     { title: "Home", path: "/", name: "index" , isActive:true},
     { title: "About", path: "/About", name: "About",isActive:false},
-    { title: "Admin", path: "/About", name: "Admin" ,isActive:false},
-    { title: "Profile", path: "/About", name: "Profile" ,isActive:false},
+    { title: "Admin", path: "/Admin", name: "Admin" ,isActive:false},
+    { title: "Profile", path: "/../Profile", name: "Profile" ,isActive:false},
     { title: "Sell", path: "/sell", name: "Sell" ,isActive:false},
-    { title: "Cart", path: "/cart", name: "Cart" ,isActive:false}
+    { title: "Cart", path: "/cart", name: "Cart" ,isActive:false},
+    
   ];
 
   return (
