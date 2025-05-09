@@ -15,7 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-// تعريف البيانات العامة للسلة
+
 if (!global.cartItems) {
   global.cartItems = [];
 }
