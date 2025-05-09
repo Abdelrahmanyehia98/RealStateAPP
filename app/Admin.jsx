@@ -19,11 +19,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const AdminDashboard = () => {
   // State management
   const [properties, setProperties] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentProperty, setCurrentProperty] = useState(null);
+  const [activeTab, setActiveTab] = useState('properties');
   
   // Default property template
   const defaultProperty = {
@@ -44,34 +46,48 @@ const AdminDashboard = () => {
 
   const [formData, setFormData] = useState({...defaultProperty});
 
-  // Load properties with error handling
+  // Load both properties and posts
   useEffect(() => {
-    const loadProperties = async () => {
+    const loadData = async () => {
       try {
-        const storedProperties = await AsyncStorage.getItem('properties');
+        const [storedProperties, storedPosts] = await Promise.all([
+          AsyncStorage.getItem('properties'),
+          AsyncStorage.getItem('posts')
+        ]);
+
         if (storedProperties) {
           const parsed = JSON.parse(storedProperties);
           setProperties(Array.isArray(parsed) ? parsed : []);
         }
+
+        if (storedPosts) {
+          const parsed = JSON.parse(storedPosts);
+          setPosts(Array.isArray(parsed) ? parsed : []);
+        }
       } catch (err) {
         console.error('Load error:', err);
-        setError('Failed to load properties. Please try again.');
+        setError('Failed to load data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadProperties();
+    loadData();
   }, []);
 
-  // Save properties with validation
-  const saveProperties = async (updatedProperties) => {
+  // Save properties and posts
+  const saveData = async (updatedProperties, updatedPosts) => {
     try {
       if (!Array.isArray(updatedProperties)) {
         throw new Error('Invalid data format');
       }
       await AsyncStorage.setItem('properties', JSON.stringify(updatedProperties));
       setProperties(updatedProperties);
+
+      if (updatedPosts) {
+        await AsyncStorage.setItem('posts', JSON.stringify(updatedPosts));
+        setPosts(updatedPosts);
+      }
       return true;
     } catch (err) {
       console.error('Save error:', err);
@@ -116,10 +132,36 @@ const AdminDashboard = () => {
           onPress: async () => {
             try {
               const updated = properties.filter(p => p?.id !== id);
-              const success = await saveProperties(updated);
+              const success = await saveData(updated, null);
               if (!success) throw new Error('Delete failed');
             } catch (err) {
               Alert.alert('Error', 'Failed to delete property');
+            }
+          },
+          style: 'destructive'
+        }
+      ]
+    );
+  };
+
+  // Handle post deletion
+  const handleDeletePost = async (id) => {
+    if (!id) return;
+
+    Alert.alert(
+      'Confirm Delete',
+      'Are you sure you want to delete this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          onPress: async () => {
+            try {
+              const updated = posts.filter(p => p?.id !== id);
+              const success = await saveData(null, updated);
+              if (!success) throw new Error('Delete failed');
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete post');
             }
           },
           style: 'destructive'
@@ -168,7 +210,7 @@ const AdminDashboard = () => {
         );
       }
 
-      const success = await saveProperties(updatedProperties);
+      const success = await saveData(updatedProperties, null);
       if (success) {
         setShowAddModal(false);
         setShowEditModal(false);
@@ -229,6 +271,55 @@ const AdminDashboard = () => {
     );
   };
 
+  // Post item component
+  const PostItem = ({ item }) => {
+    if (!item) return null;
+
+    return (
+      <View style={styles.propertyItem}>
+        {item.image && (
+          <Image 
+            source={{ uri: item.image }} 
+            style={styles.propertyImage}
+            onError={() => console.log('Image load failed')}
+          />
+        )}
+        <View style={styles.propertyContent}>
+          <Text style={styles.propertyTitle} numberOfLines={1}>
+            {item.title || 'Untitled Post'}
+          </Text>
+          
+          <View style={styles.propertyMeta}>
+            <Text style={styles.propertyLocation} numberOfLines={1}>
+              <Ionicons name="location-sharp" size={14} color="#666" /> 
+              {item.location || 'No location'}
+            </Text>
+            <Text style={styles.propertyPrice}>
+              {item.price || 'No price'}
+            </Text>
+          </View>
+          
+          <Text style={styles.postDescription} numberOfLines={2}>
+            {item.description || 'No description'}
+          </Text>
+          
+          <Text style={styles.postDate}>
+            Posted on: {item.date || 'Unknown date'}
+          </Text>
+          
+          <View style={styles.propertyActions}>
+            <ActionButton 
+              icon="trash-2" 
+              label="Delete" 
+              color="#ff4444"
+              onPress={() => handleDeletePost(item.id)}
+            />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   // Reusable components
   const DetailItem = ({ icon, value }) => (
     <View style={styles.detailItem}>
@@ -275,67 +366,110 @@ const AdminDashboard = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Property Management</Text>
-        <Text style={styles.headerSubtitle}>Admin Dashboard</Text>
+        <Text style={styles.headerTitle}>Admin Dashboard</Text>
+        <Text style={styles.headerSubtitle}>Manage Properties and Posts</Text>
       </View>
 
-      {/* Stats Cards */}
-      <View style={styles.cardRow}>
-        <StatCard 
-          value={properties.length} 
-          label="Total Properties" 
-          icon="home"
-        />
-        <StatCard 
-          value={properties.filter(p => p?.type === 'buy').length} 
-          label="For Sale" 
-          icon="tag"
-        />
-        <StatCard 
-          value={properties.filter(p => p?.type === 'rent').length} 
-          label="For Rent" 
-          icon="key"
-        />
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Actions</Text>
-        <View style={styles.buttonRow}>
-          <ActionButtonLarge 
-            icon="plus" 
-            label="Add Property" 
-            onPress={handleAddProperty}
-          />
-          <ActionButtonLarge 
-            icon="mail" 
-            label="Contact Support" 
-            onPress={() => Linking.openURL('mailto:support@example.com')}
-          />
-        </View>
-      </View>
-
-      {/* Properties List */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Properties</Text>
-          <Text style={styles.sectionSubtitle}>
-            {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'properties' && styles.activeTab]}
+          onPress={() => setActiveTab('properties')}
+        >
+          <Text style={[styles.tabText, activeTab === 'properties' && styles.activeTabText]}>
+            Properties
           </Text>
-        </View>
-
-        {properties.length > 0 ? (
-          <FlatList
-            data={properties}
-            renderItem={({ item }) => <PropertyItem item={item} />}
-            keyExtractor={item => item?.id || Math.random().toString()}
-            scrollEnabled={false}
-            contentContainerStyle={styles.listContainer}
-          />
-        ) : (
-          <EmptyState onAddProperty={handleAddProperty} />
-        )}
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+          onPress={() => setActiveTab('posts')}
+        >
+          <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
+            Posts
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {activeTab === 'properties' ? (
+        <>
+          {/* Stats Cards */}
+          <View style={styles.cardRow}>
+            <StatCard 
+              value={properties.length} 
+              label="Total Properties" 
+              icon="home"
+            />
+            <StatCard 
+              value={properties.filter(p => p?.type === 'buy').length} 
+              label="For Sale" 
+              icon="tag"
+            />
+            <StatCard 
+              value={properties.filter(p => p?.type === 'rent').length} 
+              label="For Rent" 
+              icon="key"
+            />
+          </View>
+
+          {/* Properties List */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Properties</Text>
+              <Text style={styles.sectionSubtitle}>
+                {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+              </Text>
+            </View>
+
+            {properties.length > 0 ? (
+              <FlatList
+                data={properties}
+                renderItem={({ item }) => <PropertyItem item={item} />}
+                keyExtractor={item => item?.id || Math.random().toString()}
+                scrollEnabled={false}
+                contentContainerStyle={styles.listContainer}
+              />
+            ) : (
+              <EmptyState onAddProperty={handleAddProperty} />
+            )}
+          </View>
+        </>
+      ) : (
+        <>
+          {/* Posts Stats */}
+          <View style={styles.cardRow}>
+            <StatCard 
+              value={posts.length} 
+              label="Total Posts" 
+              icon="file-text"
+            />
+          </View>
+
+          {/* Posts List */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Posts</Text>
+              <Text style={styles.sectionSubtitle}>
+                {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+              </Text>
+            </View>
+
+            {posts.length > 0 ? (
+              <FlatList
+                data={posts}
+                renderItem={({ item }) => <PostItem item={item} />}
+                keyExtractor={item => item?.id || Math.random().toString()}
+                scrollEnabled={false}
+                contentContainerStyle={styles.listContainer}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Feather name="file-text" size={48} color="#bdc3c7" />
+                <Text style={styles.emptyText}>No posts found</Text>
+              </View>
+            )}
+          </View>
+        </>
+      )}
 
       {/* Property Form Modal */}
       <PropertyFormModal
@@ -865,6 +999,41 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    padding: 4,
+    elevation: 2,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: '#29A132',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#666',
+  },
+  activeTabText: {
+    color: '#fff',
+  },
+  postDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginVertical: 8,
+  },
+  postDate: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 8,
   },
 });
 
