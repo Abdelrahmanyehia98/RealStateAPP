@@ -12,12 +12,13 @@ import {
     Modal,
     Pressable,
     ActivityIndicator,
-    Switch // Fallback for checkbox
+    Switch
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 // Error-boundary imports with fallbacks
 let ImagePicker;
-let Checkbox = Switch; // Default fallback
+let Checkbox = Switch;
 let Picker;
 
 try {
@@ -58,7 +59,7 @@ const SellScreen = () => {
     const [typeModalVisible, setTypeModalVisible] = useState(false);
 
     // Options
-    const propertyOptions = ['Apartment', 'House', 'Studio', 'Land'];
+    const propertyOptions = ['Apartment', 'House', 'Villa', 'Office', 'Shop'];
     const typeOptions = ['Buy', 'Rent'];
 
     // Handle input changes
@@ -183,6 +184,7 @@ const SellScreen = () => {
                             : setTypeModalVisible(true)}
                     >
                         <Text style={styles.pickerIOSText}>{selectedValue || placeholder}</Text>
+                        <Ionicons name="chevron-down" size={18} color="#7f8c8d" />
                     </Pressable>
                     <Modal 
                         visible={fieldName === 'property' ? propertyModalVisible : typeModalVisible} 
@@ -191,6 +193,7 @@ const SellScreen = () => {
                     >
                         <View style={styles.modalContainer}>
                             <View style={styles.modalContent}>
+                                <Text style={styles.modalTitle}>{placeholder}</Text>
                                 {items.map((item) => (
                                     <Pressable
                                         key={item}
@@ -203,10 +206,13 @@ const SellScreen = () => {
                                         }}
                                     >
                                         <Text style={styles.modalOptionText}>{item}</Text>
+                                        {selectedValue === item && (
+                                            <Ionicons name="checkmark" size={20} color="#29A132" />
+                                        )}
                                     </Pressable>
                                 ))}
                                 <Pressable
-                                    style={styles.modalOption}
+                                    style={styles.modalCancel}
                                     onPress={() => fieldName === 'property' 
                                         ? setPropertyModalVisible(false) 
                                         : setTypeModalVisible(false)}
@@ -225,6 +231,7 @@ const SellScreen = () => {
                 <Picker
                     selectedValue={selectedValue}
                     onValueChange={(value) => handleChange(fieldName, value)}
+                    style={styles.picker}
                 >
                     <Picker.Item label={placeholder} value="" />
                     {items.map(item => <Picker.Item label={item} value={item} key={item} />)}
@@ -234,107 +241,141 @@ const SellScreen = () => {
     };
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.heading}>Sell Your Property</Text>
-
-            {/* Image Upload */}
-            <TouchableOpacity style={styles.imagePicker} onPress={handleImagePick}>
-                <Text style={styles.imagePickerText}>
-                    {formData.image ? 'Change Photo' : 'Tap to Upload Photo'}
-                </Text>
-            </TouchableOpacity>
-            {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
-
-            {formData.image && <Image source={{ uri: formData.image }} style={styles.preview} />}
-
-            {/* Title */}
-            <TextInput
-                style={[styles.input, errors.title && styles.errorBorder]}
-                placeholder="Title"
-                value={formData.title}
-                onChangeText={(text) => handleChange('title', text)}
-            />
-            {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-
-            {/* Location */}
-            <TextInput
-                style={[styles.input, errors.location && styles.errorBorder]}
-                placeholder="Location"
-                value={formData.location}
-                onChangeText={(text) => handleChange('location', text)}
-            />
-            {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
-
-            {/* Description */}
-            <TextInput
-                style={[styles.input, styles.textArea, errors.description && styles.errorBorder]}
-                placeholder="Description"
-                value={formData.description}
-                onChangeText={(text) => handleChange('description', text)}
-                multiline
-            />
-            {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-
-            {/* Property Type Picker */}
-            <Text style={styles.label}>Property Type</Text>
-            {renderPicker(propertyOptions, formData.property, 'property', 'Select Property')}
-            {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
-
-            {/* Transaction Type Picker */}
-            <Text style={styles.label}>Transaction Type</Text>
-            {renderPicker(typeOptions, formData.type, 'type', 'Select Type')}
-            {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
-
-            {/* Bedroom */}
-            <TextInput
-                style={[styles.input, errors.bedroom && styles.errorBorder]}
-                placeholder="Bedroom"
-                keyboardType="numeric"
-                value={formData.bedroom}
-                onChangeText={(text) => handleNumberInput(text, 'bedroom')}
-            />
-            {errors.bedroom && <Text style={styles.errorText}>{errors.bedroom}</Text>}
-
-            {/* Area */}
-            <TextInput
-                style={[styles.input, errors.area && styles.errorBorder]}
-                placeholder="Area (m²)"
-                keyboardType="numeric"
-                value={formData.area}
-                onChangeText={(text) => handleNumberInput(text, 'area')}
-            />
-            {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
-
-            {/* Price */}
-            <TextInput
-                style={[styles.input, errors.price && styles.errorBorder]}
-                placeholder="Price"
-                keyboardType="numeric"
-                value={formData.price}
-                onChangeText={(text) => handleNumberInput(text, 'price')}
-            />
-            {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
-
-            {/* Negotiationable */}
-            <View style={styles.checkboxContainer}>
-                {Checkbox === Switch ? (
-                    <Switch
-                        value={formData.negotiationable}
-                        onValueChange={(value) => handleChange('negotiationable', value)}
-                        thumbColor={formData.negotiationable ? '#29A132' : '#f4f3f4'}
-                    />
-                ) : (
-                    <Checkbox
-                        value={formData.negotiationable}
-                        onValueChange={(value) => handleChange('negotiationable', value)}
-                        color={formData.negotiationable ? '#29A132' : undefined}
-                    />
-                )}
-                <Text style={styles.checkboxLabel}>Negotiationable</Text>
+        <ScrollView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.appName}>List Your Property</Text>
+                <Text style={styles.tagline}>Fill in the details below</Text>
             </View>
 
-            {/* Submit Button */}
-            <View style={styles.buttonContainer}>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Property Details</Text>
+                
+                {/* Image Upload */}
+                <TouchableOpacity style={styles.imagePicker} onPress={handleImagePick}>
+                    {formData.image ? (
+                        <Image source={{ uri: formData.image }} style={styles.preview} />
+                    ) : (
+                        <View style={styles.imageUploadContent}>
+                            <Ionicons name="cloud-upload" size={40} color="#29A132" />
+                            <Text style={styles.imagePickerText}>Tap to Upload Photo</Text>
+                            <Text style={styles.imagePickerSubtext}>Max 5MB</Text>
+                        </View>
+                    )}
+                </TouchableOpacity>
+                {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
+
+                {/* Title */}
+                <Text style={styles.label}>Property Title</Text>
+                <TextInput
+                    style={[styles.input, errors.title && styles.errorBorder]}
+                    placeholder="Enter property title"
+                    placeholderTextColor="#7f8c8d"
+                    value={formData.title}
+                    onChangeText={(text) => handleChange('title', text)}
+                />
+                {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+
+                {/* Location */}
+                <Text style={styles.label}>Location</Text>
+                <TextInput
+                    style={[styles.input, errors.location && styles.errorBorder]}
+                    placeholder="Enter property location"
+                    placeholderTextColor="#7f8c8d"
+                    value={formData.location}
+                    onChangeText={(text) => handleChange('location', text)}
+                />
+                {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
+
+                {/* Description */}
+                <Text style={styles.label}>Description</Text>
+                <TextInput
+                    style={[styles.input, styles.textArea, errors.description && styles.errorBorder]}
+                    placeholder="Describe your property"
+                    placeholderTextColor="#7f8c8d"
+                    value={formData.description}
+                    onChangeText={(text) => handleChange('description', text)}
+                    multiline
+                />
+                {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
+
+                <View style={styles.filterRow}>
+                    {/* Property Type Picker */}
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.label}>Property Type</Text>
+                        {renderPicker(propertyOptions, formData.property, 'property', 'Select Type')}
+                        {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
+                    </View>
+
+                    {/* Transaction Type Picker */}
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.label}>Transaction Type</Text>
+                        {renderPicker(typeOptions, formData.type, 'type', 'Select Type')}
+                        {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
+                    </View>
+                </View>
+
+                <View style={styles.filterRow}>
+                    {/* Bedroom */}
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.label}>Bedrooms</Text>
+                        <TextInput
+                            style={[styles.input, errors.bedroom && styles.errorBorder]}
+                            placeholder="0"
+                            placeholderTextColor="#7f8c8d"
+                            keyboardType="numeric"
+                            value={formData.bedroom}
+                            onChangeText={(text) => handleNumberInput(text, 'bedroom')}
+                        />
+                        {errors.bedroom && <Text style={styles.errorText}>{errors.bedroom}</Text>}
+                    </View>
+
+                    {/* Area */}
+                    <View style={styles.filterGroup}>
+                        <Text style={styles.label}>Area (m²)</Text>
+                        <TextInput
+                            style={[styles.input, errors.area && styles.errorBorder]}
+                            placeholder="0"
+                            placeholderTextColor="#7f8c8d"
+                            keyboardType="numeric"
+                            value={formData.area}
+                            onChangeText={(text) => handleNumberInput(text, 'area')}
+                        />
+                        {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
+                    </View>
+                </View>
+
+                {/* Price */}
+                <Text style={styles.label}>Price ($)</Text>
+                <TextInput
+                    style={[styles.input, errors.price && styles.errorBorder]}
+                    placeholder="Enter price"
+                    placeholderTextColor="#7f8c8d"
+                    keyboardType="numeric"
+                    value={formData.price}
+                    onChangeText={(text) => handleNumberInput(text, 'price')}
+                />
+                {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
+
+                {/* Negotiationable */}
+                <View style={styles.checkboxContainer}>
+                    {Checkbox === Switch ? (
+                        <Switch
+                            value={formData.negotiationable}
+                            onValueChange={(value) => handleChange('negotiationable', value)}
+                            thumbColor={formData.negotiationable ? '#29A132' : '#f4f3f4'}
+                            trackColor={{ false: '#767577', true: '#81b0ff' }}
+                        />
+                    ) : (
+                        <Checkbox
+                            value={formData.negotiationable}
+                            onValueChange={(value) => handleChange('negotiationable', value)}
+                            color={formData.negotiationable ? '#29A132' : undefined}
+                        />
+                    )}
+                    <Text style={styles.checkboxLabel}>Price is negotiable</Text>
+                </View>
+
+                {/* Submit Button */}
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={handleSubmit}
@@ -353,44 +394,68 @@ const SellScreen = () => {
 
 const styles = StyleSheet.create({
     container: {
-        padding: 20,
-        backgroundColor: '#f5f6fa',
-        paddingBottom: 40,
+        flex: 1,
+        backgroundColor: '#fff',
+        paddingHorizontal: 20,
     },
-    heading: {
-        fontSize: 24,
-        fontWeight: '700',
+    header: {
+        paddingVertical: 25,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
         marginBottom: 20,
-        color: '#333',
+    },
+    appName: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#2c3e50',
         textAlign: 'center',
+    },
+    tagline: {
+        fontSize: 16,
+        color: '#7f8c8d',
+        marginTop: 5,
+        textAlign: 'center',
+    },
+    section: {
+        marginBottom: 30,
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#2c3e50',
+        marginBottom: 15,
+        borderBottomWidth: 2,
+        borderBottomColor: '#29A132',
+        paddingBottom: 5,
     },
     input: {
         borderWidth: 1,
         borderColor: '#ccc',
-        paddingHorizontal: 12,
-        marginBottom: 8,
-        height: 44,
         borderRadius: 8,
+        padding: 15,
+        marginBottom: 8,
+        fontSize: 16,
+        color: '#34495e',
         backgroundColor: '#fff',
     },
     textArea: {
         height: 100,
         textAlignVertical: 'top',
-        paddingTop: 12,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#34495e',
+        marginBottom: 8,
     },
     errorText: {
         color: 'red',
-        fontSize: 12,
+        fontSize: 14,
         marginBottom: 12,
         marginTop: -6,
     },
     errorBorder: {
         borderColor: 'red',
-    },
-    label: {
-        fontWeight: '600',
-        marginBottom: 6,
-        color: '#555',
     },
     pickerWrapper: {
         borderWidth: 1,
@@ -400,82 +465,129 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         overflow: 'hidden',
     },
+    picker: {
+        height: 50,
+        width: '100%',
+        color: '#34495e',
+    },
     pickerIOSButton: {
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
         backgroundColor: '#fff',
-        padding: 12,
+        padding: 15,
         marginBottom: 8,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     pickerIOSText: {
-        color: '#333',
+        color: '#34495e',
         fontSize: 16,
     },
     modalContainer: {
         flex: 1,
         justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0,0,0,0.3)',
+        backgroundColor: 'rgba(0,0,0,0.5)',
     },
     modalContent: {
         backgroundColor: '#fff',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         padding: 20,
+        paddingBottom: 30,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#2c3e50',
+        marginBottom: 20,
+        textAlign: 'center',
     },
     modalOption: {
-        paddingVertical: 12,
+        paddingVertical: 15,
         borderBottomWidth: 1,
         borderBottomColor: '#eee',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     modalOptionText: {
-        fontSize: 18,
+        fontSize: 16,
+        color: '#34495e',
+    },
+    modalCancel: {
+        marginTop: 20,
+        padding: 15,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 10,
+        alignItems: 'center',
     },
     modalClose: {
-        paddingVertical: 14,
-        textAlign: 'center',
-        color: '#007bff',
+        fontSize: 16,
+        color: '#29A132',
         fontWeight: '600',
     },
     checkboxContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginBottom: 16,
+        marginBottom: 25,
+        marginTop: 10,
     },
     checkboxLabel: {
-        marginLeft: 8,
+        marginLeft: 12,
         fontSize: 16,
-        color: '#333',
+        color: '#34495e',
     },
     imagePicker: {
         borderWidth: 2,
-        borderStyle: 'dashed',
-        borderColor: '#aaa',
-        backgroundColor: '#fafafa',
-        padding: 20,
-        alignItems: 'center',
+        borderColor: '#eee',
+        backgroundColor: '#f9f9f9',
         borderRadius: 12,
-        marginBottom: 12,
+        marginBottom: 15,
+        height: 180,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    imageUploadContent: {
+        alignItems: 'center',
     },
     imagePickerText: {
-        color: '#666',
+        color: '#2c3e50',
         fontWeight: '500',
+        marginTop: 10,
+        fontSize: 16,
+    },
+    imagePickerSubtext: {
+        color: '#7f8c8d',
+        fontSize: 14,
+        marginTop: 5,
     },
     preview: {
         width: '100%',
-        height: 200,
-        borderRadius: 12,
-        marginBottom: 20,
+        height: '100%',
     },
-    buttonContainer: {
-        marginTop: 10,
+    filterRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 15,
+    },
+    filterGroup: {
+        width: '48%',
     },
     submitButton: {
         backgroundColor: '#29A132',
-        padding: 15,
+        padding: 18,
         borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 10,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     submitButtonText: {
         color: '#fff',
