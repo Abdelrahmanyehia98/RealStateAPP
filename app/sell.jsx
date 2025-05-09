@@ -3,7 +3,6 @@ import {
     View,
     Text,
     TextInput,
-    Button,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
@@ -12,28 +11,49 @@ import {
     Platform,
     Modal,
     Pressable,
-    ActivityIndicator
+    ActivityIndicator,
+    Switch // Fallback for checkbox
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import Checkbox from 'expo-checkbox';
-import { Picker } from '@react-native-picker/picker';
 
-export default function SellScreen() {
+// Error-boundary imports with fallbacks
+let ImagePicker;
+let Checkbox = Switch; // Default fallback
+let Picker;
+
+try {
+    ImagePicker = require('expo-image-picker');
+} catch (error) {
+    console.warn("expo-image-picker not available. Image upload functionality will be limited.");
+}
+
+try {
+    Checkbox = require('expo-checkbox').default;
+} catch (error) {
+    console.warn("expo-checkbox not available. Using Switch as fallback.");
+}
+
+try {
+    Picker = require('@react-native-picker/picker').Picker;
+} catch (error) {
+    console.warn("@react-native-picker/picker not available. Picker functionality will be limited.");
+}
+
+const SellScreen = () => {
     // Form state
-    const [title, setTitle] = useState('');
-    const [location, setLocation] = useState('');
-    const [description, setDescription] = useState('');
-    const [property, setProperty] = useState('');
-    const [type, setType] = useState('');
-    const [bedroom, setBedroom] = useState('');
-    const [area, setArea] = useState('');
-    const [price, setPrice] = useState('');
-    const [negotiationable, setNegotiationable] = useState(false);
-    const [image, setImage] = useState(null);
+    const [formData, setFormData] = useState({
+        title: '',
+        location: '',
+        description: '',
+        property: '',
+        type: '',
+        bedroom: '',
+        area: '',
+        price: '',
+        negotiationable: false,
+        image: null,
+    });
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
-
-    // iOS Picker modals
     const [propertyModalVisible, setPropertyModalVisible] = useState(false);
     const [typeModalVisible, setTypeModalVisible] = useState(false);
 
@@ -41,66 +61,66 @@ export default function SellScreen() {
     const propertyOptions = ['Apartment', 'House', 'Studio', 'Land'];
     const typeOptions = ['Buy', 'Rent'];
 
-    // Handle image selection
+    // Handle input changes
+    const handleChange = (name, value) => {
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    // Handle image selection with error handling
     const handleImagePick = async () => {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'We need access to your media to upload images.');
+        if (!ImagePicker) {
+            Alert.alert('Error', 'Image upload functionality is not available');
             return;
         }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [4, 3],
-            quality: 0.8,
-            base64: true,
-        });
-
-        if (result.canceled) return;
-
-        if (result.assets && result.assets[0].uri) {
-            const selectedImage = result.assets[0];
-            if (selectedImage.fileSize > 5000000) { // 5MB
-                Alert.alert('Image too large', 'Please select an image smaller than 5MB');
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'We need access to your media to upload images.');
                 return;
             }
-            setImage(selectedImage.uri);
-            setErrors({ ...errors, image: null });
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [4, 3],
+                quality: 0.8,
+            });
+
+            if (!result.canceled && result.assets?.[0]?.uri) {
+                const selectedImage = result.assets[0];
+                if (selectedImage.fileSize > 5000000) {
+                    Alert.alert('Image too large', 'Please select an image smaller than 5MB');
+                    return;
+                }
+                handleChange('image', selectedImage.uri);
+            }
+        } catch (error) {
+            console.error('Image picker error:', error);
+            Alert.alert('Error', 'Failed to select image. Please try again.');
         }
     };
 
     // Handle number inputs
-    const handleNumberInput = (text, setter, fieldName) => {
+    const handleNumberInput = (text, fieldName) => {
         if (/^\d*$/.test(text)) {
-            setter(text);
-            setErrors({ ...errors, [fieldName]: null });
-        }
-    };
-
-    // Handle description input with word limit
-    const handleDescriptionChange = (text) => {
-        const wordCount = text.trim().split(/\s+/).length;
-        if (wordCount <= 100) {
-            setDescription(text);
-            setErrors({ ...errors, description: null });
-        } else {
-            Alert.alert('Limit Exceeded', 'Description cannot exceed 100 words.');
+            handleChange(fieldName, text);
         }
     };
 
     // Validate form
     const validateForm = () => {
         const newErrors = {};
-        if (!title.trim()) newErrors.title = 'Title is required';
-        if (!location.trim()) newErrors.location = 'Location is required';
-        if (!description.trim()) newErrors.description = 'Description is required';
-        if (!property) newErrors.property = 'Property type is required';
-        if (!type) newErrors.type = 'Transaction type is required';
-        if (!bedroom) newErrors.bedroom = 'Bedroom count is required';
-        if (!area) newErrors.area = 'Area is required';
-        if (!price) newErrors.price = 'Price is required';
-        if (!image) newErrors.image = 'Image is required';
+        const requiredFields = ['title', 'location', 'description', 'property', 'type', 'bedroom', 'area', 'price', 'image'];
+        
+        requiredFields.forEach(field => {
+            if (!formData[field]) {
+                newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+            }
+        });
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -110,41 +130,27 @@ export default function SellScreen() {
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
-        const formData = {
-            title,
-            location,
-            description,
-            property,
-            type,
-            bedroom,
-            area,
-            price,
-            negotiationable,
-            image,
-        };
-
         setSubmitting(true);
 
         try {
-            // Here you would typically send the data to your backend
-            console.log('Form Submitted:', formData);
-
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1500));
-
+            
             Alert.alert('Success', 'Your property has been listed!');
-
+            
             // Reset form
-            setTitle('');
-            setLocation('');
-            setDescription('');
-            setProperty('');
-            setType('');
-            setBedroom('');
-            setArea('');
-            setPrice('');
-            setNegotiationable(false);
-            setImage(null);
+            setFormData({
+                title: '',
+                location: '',
+                description: '',
+                property: '',
+                type: '',
+                bedroom: '',
+                area: '',
+                price: '',
+                negotiationable: false,
+                image: null,
+            });
             setErrors({});
         } catch (error) {
             Alert.alert('Error', 'Failed to submit property. Please try again.');
@@ -154,211 +160,176 @@ export default function SellScreen() {
         }
     };
 
+    // Render picker based on platform and availability
+    const renderPicker = (items, selectedValue, fieldName, placeholder) => {
+        if (!Picker) {
+            return (
+                <Pressable
+                    style={[styles.pickerIOSButton, errors[fieldName] && styles.errorBorder]}
+                    onPress={() => Alert.alert('Info', 'Picker functionality not available')}
+                >
+                    <Text style={styles.pickerIOSText}>{selectedValue || placeholder}</Text>
+                </Pressable>
+            );
+        }
+
+        if (Platform.OS === 'ios') {
+            return (
+                <>
+                    <Pressable
+                        style={[styles.pickerIOSButton, errors[fieldName] && styles.errorBorder]}
+                        onPress={() => fieldName === 'property' 
+                            ? setPropertyModalVisible(true) 
+                            : setTypeModalVisible(true)}
+                    >
+                        <Text style={styles.pickerIOSText}>{selectedValue || placeholder}</Text>
+                    </Pressable>
+                    <Modal 
+                        visible={fieldName === 'property' ? propertyModalVisible : typeModalVisible} 
+                        animationType="slide" 
+                        transparent
+                    >
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalContent}>
+                                {items.map((item) => (
+                                    <Pressable
+                                        key={item}
+                                        style={styles.modalOption}
+                                        onPress={() => {
+                                            handleChange(fieldName, item);
+                                            fieldName === 'property' 
+                                                ? setPropertyModalVisible(false) 
+                                                : setTypeModalVisible(false);
+                                        }}
+                                    >
+                                        <Text style={styles.modalOptionText}>{item}</Text>
+                                    </Pressable>
+                                ))}
+                                <Pressable
+                                    style={styles.modalOption}
+                                    onPress={() => fieldName === 'property' 
+                                        ? setPropertyModalVisible(false) 
+                                        : setTypeModalVisible(false)}
+                                >
+                                    <Text style={styles.modalClose}>Cancel</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </Modal>
+                </>
+            );
+        }
+
+        return (
+            <View style={[styles.pickerWrapper, errors[fieldName] && styles.errorBorder]}>
+                <Picker
+                    selectedValue={selectedValue}
+                    onValueChange={(value) => handleChange(fieldName, value)}
+                >
+                    <Picker.Item label={placeholder} value="" />
+                    {items.map(item => <Picker.Item label={item} value={item} key={item} />)}
+                </Picker>
+            </View>
+        );
+    };
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.heading}>Sell Your Property</Text>
 
             {/* Image Upload */}
             <TouchableOpacity style={styles.imagePicker} onPress={handleImagePick}>
-                <Text style={styles.imagePickerText}>{image ? 'Change Photo' : 'Tap to Upload Photo'}</Text>
+                <Text style={styles.imagePickerText}>
+                    {formData.image ? 'Change Photo' : 'Tap to Upload Photo'}
+                </Text>
             </TouchableOpacity>
             {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
 
-            {image && <Image source={{ uri: image }} style={styles.preview} />}
+            {formData.image && <Image source={{ uri: formData.image }} style={styles.preview} />}
 
             {/* Title */}
             <TextInput
-                style={styles.input}
+                style={[styles.input, errors.title && styles.errorBorder]}
                 placeholder="Title"
-                value={title}
-                onChangeText={(text) => {
-                    setTitle(text);
-                    setErrors({ ...errors, title: null });
-                }}
+                value={formData.title}
+                onChangeText={(text) => handleChange('title', text)}
             />
             {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
             {/* Location */}
             <TextInput
-                style={styles.input}
+                style={[styles.input, errors.location && styles.errorBorder]}
                 placeholder="Location"
-                value={location}
-                onChangeText={(text) => {
-                    setLocation(text);
-                    setErrors({ ...errors, location: null });
-                }}
+                value={formData.location}
+                onChangeText={(text) => handleChange('location', text)}
             />
             {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
             {/* Description */}
             <TextInput
-                style={[styles.input, { height: 100 }]}
-                placeholder="Description (max 100 words)"
-                value={description}
-                onChangeText={handleDescriptionChange}
+                style={[styles.input, styles.textArea, errors.description && styles.errorBorder]}
+                placeholder="Description"
+                value={formData.description}
+                onChangeText={(text) => handleChange('description', text)}
                 multiline
             />
             {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
 
             {/* Property Type Picker */}
             <Text style={styles.label}>Property Type</Text>
-            {Platform.OS === 'ios' ? (
-                <>
-                    <Pressable
-                        style={[
-                            styles.pickerIOSButton,
-                            errors.property && { borderColor: 'red' }
-                        ]}
-                        onPress={() => setPropertyModalVisible(true)}
-                    >
-                        <Text style={styles.pickerIOSText}>{property || 'Select Property'}</Text>
-                    </Pressable>
-                    {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
-                    <Modal visible={propertyModalVisible} animationType="slide" transparent>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                {propertyOptions.map((item) => (
-                                    <Pressable
-                                        key={item}
-                                        style={styles.modalOption}
-                                        onPress={() => {
-                                            setProperty(item);
-                                            setPropertyModalVisible(false);
-                                            setErrors({ ...errors, property: null });
-                                        }}
-                                    >
-                                        <Text style={styles.modalOptionText}>{item}</Text>
-                                    </Pressable>
-                                ))}
-                                <Pressable
-                                    style={styles.modalOption}
-                                    onPress={() => setPropertyModalVisible(false)}
-                                >
-                                    <Text style={styles.modalClose}>Cancel</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-                    </Modal>
-                </>
-            ) : (
-                <>
-                    <View style={[
-                        styles.pickerWrapper,
-                        errors.property && { borderColor: 'red' }
-                    ]}>
-                        <Picker
-                            selectedValue={property}
-                            onValueChange={(value) => {
-                                setProperty(value);
-                                setErrors({ ...errors, property: null });
-                            }}
-                        >
-                            <Picker.Item label="Select Property" value="" />
-                            {propertyOptions.map(item => <Picker.Item label={item} value={item} key={item} />)}
-                        </Picker>
-                    </View>
-                    {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
-                </>
-            )}
+            {renderPicker(propertyOptions, formData.property, 'property', 'Select Property')}
+            {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
 
             {/* Transaction Type Picker */}
             <Text style={styles.label}>Transaction Type</Text>
-            {Platform.OS === 'ios' ? (
-                <>
-                    <Pressable
-                        style={[
-                            styles.pickerIOSButton,
-                            errors.type && { borderColor: 'red' }
-                        ]}
-                        onPress={() => setTypeModalVisible(true)}
-                    >
-                        <Text style={styles.pickerIOSText}>{type || 'Select Type'}</Text>
-                    </Pressable>
-                    {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
-                    <Modal visible={typeModalVisible} animationType="slide" transparent>
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                {typeOptions.map((item) => (
-                                    <Pressable
-                                        key={item}
-                                        style={styles.modalOption}
-                                        onPress={() => {
-                                            setType(item);
-                                            setTypeModalVisible(false);
-                                            setErrors({ ...errors, type: null });
-                                        }}
-                                    >
-                                        <Text style={styles.modalOptionText}>{item}</Text>
-                                    </Pressable>
-                                ))}
-                                <Pressable
-                                    style={styles.modalOption}
-                                    onPress={() => setTypeModalVisible(false)}
-                                >
-                                    <Text style={styles.modalClose}>Cancel</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-                    </Modal>
-                </>
-            ) : (
-                <>
-                    <View style={[
-                        styles.pickerWrapper,
-                        errors.type && { borderColor: 'red' }
-                    ]}>
-                        <Picker
-                            selectedValue={type}
-                            onValueChange={(value) => {
-                                setType(value);
-                                setErrors({ ...errors, type: null });
-                            }}
-                        >
-                            <Picker.Item label="Select Type" value="" />
-                            {typeOptions.map(item => <Picker.Item label={item} value={item} key={item} />)}
-                        </Picker>
-                    </View>
-                    {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
-                </>
-            )}
+            {renderPicker(typeOptions, formData.type, 'type', 'Select Type')}
+            {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
 
             {/* Bedroom */}
             <TextInput
-                style={styles.input}
+                style={[styles.input, errors.bedroom && styles.errorBorder]}
                 placeholder="Bedroom"
                 keyboardType="numeric"
-                value={bedroom}
-                onChangeText={(text) => handleNumberInput(text, setBedroom, 'bedroom')}
+                value={formData.bedroom}
+                onChangeText={(text) => handleNumberInput(text, 'bedroom')}
             />
             {errors.bedroom && <Text style={styles.errorText}>{errors.bedroom}</Text>}
 
             {/* Area */}
             <TextInput
-                style={styles.input}
+                style={[styles.input, errors.area && styles.errorBorder]}
                 placeholder="Area (m²)"
                 keyboardType="numeric"
-                value={area}
-                onChangeText={(text) => handleNumberInput(text, setArea, 'area')}
+                value={formData.area}
+                onChangeText={(text) => handleNumberInput(text, 'area')}
             />
             {errors.area && <Text style={styles.errorText}>{errors.area}</Text>}
 
             {/* Price */}
             <TextInput
-                style={styles.input}
+                style={[styles.input, errors.price && styles.errorBorder]}
                 placeholder="Price"
                 keyboardType="numeric"
-                value={price}
-                onChangeText={(text) => handleNumberInput(text, setPrice, 'price')}
+                value={formData.price}
+                onChangeText={(text) => handleNumberInput(text, 'price')}
             />
             {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
 
             {/* Negotiationable */}
             <View style={styles.checkboxContainer}>
-                <Checkbox
-                    value={negotiationable}
-                    onValueChange={setNegotiationable}
-                    color={negotiationable ? '#29A132' : undefined}
-                />
+                {Checkbox === Switch ? (
+                    <Switch
+                        value={formData.negotiationable}
+                        onValueChange={(value) => handleChange('negotiationable', value)}
+                        thumbColor={formData.negotiationable ? '#29A132' : '#f4f3f4'}
+                    />
+                ) : (
+                    <Checkbox
+                        value={formData.negotiationable}
+                        onValueChange={(value) => handleChange('negotiationable', value)}
+                        color={formData.negotiationable ? '#29A132' : undefined}
+                    />
+                )}
                 <Text style={styles.checkboxLabel}>Negotiationable</Text>
             </View>
 
@@ -378,7 +349,7 @@ export default function SellScreen() {
             </View>
         </ScrollView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -402,11 +373,19 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         backgroundColor: '#fff',
     },
+    textArea: {
+        height: 100,
+        textAlignVertical: 'top',
+        paddingTop: 12,
+    },
     errorText: {
         color: 'red',
         fontSize: 12,
         marginBottom: 12,
         marginTop: -6,
+    },
+    errorBorder: {
+        borderColor: 'red',
     },
     label: {
         fontWeight: '600',
@@ -504,3 +483,5 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 });
+
+export default SellScreen;
