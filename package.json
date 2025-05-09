@@ -21,7 +21,9 @@
     "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-reanimated": "~3.16.1",
-    "react-native-web": "~0.19.13"
+    "react-native-web": "~0.19.13",
+    "expo-image-picker": "~16.0.6",
+    "expo-checkbox": "~4.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
