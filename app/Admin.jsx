@@ -18,14 +18,19 @@ import {
   getAllProperties,
   addProperty,
   updateProperty,
-  deleteProperty
+  deleteProperty,
+  getAllPosts,
+  deletePost
 } from '../services/firestore';
 
 const AdminDashboard = () => {
   // State management
   const [properties, setProperties] = useState([]);
+  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPosts, setLoadingPosts] = useState(true);
   const [error, setError] = useState(null);
+  const [postsError, setPostsError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentProperty, setCurrentProperty] = useState(null);
@@ -320,6 +325,11 @@ const AdminDashboard = () => {
           label="For Rent"
           icon="key"
         />
+        <StatCard
+          value={posts.length}
+          label="User Posts"
+          icon="file-text"
+        />
       </View>
 
       {/* Action Buttons */}
@@ -358,6 +368,36 @@ const AdminDashboard = () => {
           />
         ) : (
           <EmptyState onAddProperty={handleAddProperty} />
+        )}
+      </View>
+
+      {/* Posts List */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>User Posts</Text>
+          <Text style={styles.sectionSubtitle}>
+            {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+          </Text>
+        </View>
+
+        {loadingPosts ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#29A132" />
+            <Text style={styles.loadingText}>Loading posts...</Text>
+          </View>
+        ) : posts.length > 0 ? (
+          <FlatList
+            data={posts}
+            renderItem={({ item }) => <PostItem item={item} />}
+            keyExtractor={item => item?.id || Math.random().toString()}
+            scrollEnabled={false}
+            contentContainerStyle={styles.listContainer}
+          />
+        ) : (
+          <View style={styles.emptyState}>
+            <Feather name="file-text" size={48} color="#bdc3c7" />
+            <Text style={styles.emptyText}>No posts found</Text>
+          </View>
         )}
       </View>
 
@@ -775,6 +815,78 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 24,
     textAlign: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 30,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    marginTop: 10,
+  },
+  postItem: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 12,
+    overflow: 'hidden',
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  postImage: {
+    width: '100%',
+    height: 150,
+    resizeMode: 'cover',
+  },
+  postContent: {
+    padding: 16,
+  },
+  postTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  postDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  postMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  postLocation: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+  },
+  postPrice: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#29A132',
+  },
+  postInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  postDate: {
+    fontSize: 12,
+    color: '#999',
+  },
+  postUser: {
+    fontSize: 12,
+    color: '#999',
+  },
+  postActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
   primaryButton: {
     backgroundColor: '#29A132',

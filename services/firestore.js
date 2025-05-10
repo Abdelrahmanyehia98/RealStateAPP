@@ -262,6 +262,46 @@ export const getPropertiesByUserId = async (userId) => {
   }
 };
 
+// ===== POST OPERATIONS =====
+
+/**
+ * Get all posts
+ * @returns {Promise<Array>} Array of post objects
+ */
+export const getAllPosts = async () => {
+  try {
+    const postsRef = collection(db, 'posts');
+    const querySnapshot = await getDocs(postsRef);
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting posts:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a post
+ * @param {string} id - Post ID
+ * @returns {Promise<void>}
+ */
+export const deletePost = async (id) => {
+  try {
+    if (!id) {
+      throw new Error('Post ID is required');
+    }
+
+    const postRef = doc(db, 'posts', id);
+    await deleteDoc(postRef);
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    throw error;
+  }
+};
+
 /**
  * Upload a property image to Firebase Storage
  * @param {string} uri - Image URI

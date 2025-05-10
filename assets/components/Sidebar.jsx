@@ -33,7 +33,7 @@ const Sidebar = () => {
     return () => unsubscribe();
   }, []);
 
-  // Handle logout
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
