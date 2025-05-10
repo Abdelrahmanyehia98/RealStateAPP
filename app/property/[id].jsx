@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,17 @@ import {
   Share,
   Alert,
   Dimensions,
-  FlatList
+  FlatList,
+  ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
+import { getPropertyById, getFilteredProperties } from '../../services/firestore';
 
 const screenWidth = Dimensions.get('window').width;
 
-const properties = [
+// Fallback properties in case Firestore fails
+const fallbackProperties = [
   {
     id: "1",
     title: "Luxury Villa",
@@ -185,17 +188,89 @@ export default function PropertyDetails() {
     message: ''
   });
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [property, setProperty] = useState(null);
+  const [similarProperties, setSimilarProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const property = properties.find(p => p.id === id);
-  const similarProperties = properties.filter(p =>
-    p.id !== id &&
-    (p.propertyType === property?.propertyType || p.type === property?.type)
-  ).slice(0, 3);
+  // Fetch property details from Firestore
+  useEffect(() => {
+    const fetchPropertyDetails = async () => {
+      try {
+        setLoading(true);
+        const propertyData = await getPropertyById(id);
+        setProperty(propertyData);
 
+        // Fetch similar properties
+        const filters = {
+          propertyType: propertyData.propertyType,
+          type: propertyData.type
+        };
+        const filtered = await getFilteredProperties(filters);
+        // Remove the current property and limit to 3
+        const similar = filtered.filter(p => p.id !== id).slice(0, 3);
+        setSimilarProperties(similar);
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching property details:', err);
+        setError('Failed to load property details. Please try again.');
+
+        // Try to use fallback data if available
+        const fallbackProperty = fallbackProperties.find(p => p.id === id);
+        if (fallbackProperty) {
+          setProperty(fallbackProperty);
+          const fallbackSimilar = fallbackProperties.filter(p =>
+            p.id !== id &&
+            (p.propertyType === fallbackProperty.propertyType || p.type === fallbackProperty.type)
+          ).slice(0, 3);
+          setSimilarProperties(fallbackSimilar);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPropertyDetails();
+  }, [id]);
+
+  // Show loading indicator
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#29A132" />
+        <Text style={styles.loadingText}>Loading property details...</Text>
+      </View>
+    );
+  }
+
+  // Show error message
+  if (error && !property) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle" size={50} color="#e74c3c" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.retryButtonText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Show not found message
   if (!property) {
     return (
       <View style={styles.container}>
         <Text style={styles.notFoundText}>Property not found</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.retryButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -281,7 +356,7 @@ export default function PropertyDetails() {
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerActions}>
           <TouchableOpacity
             style={styles.actionButton}
@@ -332,12 +407,12 @@ export default function PropertyDetails() {
               {property.propertyType.charAt(0).toUpperCase() + property.propertyType.slice(1)}
             </Text>
           </View>
-          
+
           <View style={styles.locationContainer}>
             <Ionicons name="location-sharp" size={16} color="#666" />
             <Text style={styles.location}>{property.location}</Text>
           </View>
-          
+
           <Text style={styles.price}>${property.price.toLocaleString()}</Text>
           <Text style={styles.priceNote}>
             {property.type === 'rent' ? 'per month' : 'total price'}
@@ -401,7 +476,7 @@ export default function PropertyDetails() {
             </View>
           )}
         </View>
-        
+
       </ScrollView>
 
       {/* Contact Button */}
@@ -466,7 +541,7 @@ export default function PropertyDetails() {
             >
               <Text style={styles.submitButtonText}>Send Message</Text>
             </TouchableOpacity>
-            
+
           </View>
         </View>
       </Modal>
@@ -479,11 +554,48 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#29A132',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#29A132',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
   notFoundText: {
     fontSize: 18,
     color: '#666',
     textAlign: 'center',
     marginTop: 50,
+    marginBottom: 20,
   },
   header: {
     position: 'absolute',

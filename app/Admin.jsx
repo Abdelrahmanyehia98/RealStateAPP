@@ -14,19 +14,22 @@ import {
   Linking
 } from 'react-native';
 import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  getAllProperties,
+  addProperty,
+  updateProperty,
+  deleteProperty
+} from '../services/firestore';
 
 const AdminDashboard = () => {
   // State management
   const [properties, setProperties] = useState([]);
-  const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [currentProperty, setCurrentProperty] = useState(null);
-  const [activeTab, setActiveTab] = useState('properties');
-  
+
   // Default property template
   const defaultProperty = {
     id: '',
@@ -44,57 +47,24 @@ const AdminDashboard = () => {
     images: []
   };
 
-  const [formData, setFormData] = useState({...defaultProperty});
+  const [formData, setFormData] = useState({ ...defaultProperty });
 
-  // Load both properties and posts
+  // Load properties from Firestore
   useEffect(() => {
-    const loadData = async () => {
+    const loadProperties = async () => {
       try {
-        const [storedProperties, storedPosts] = await Promise.all([
-          AsyncStorage.getItem('properties'),
-          AsyncStorage.getItem('posts')
-        ]);
-
-        if (storedProperties) {
-          const parsed = JSON.parse(storedProperties);
-          setProperties(Array.isArray(parsed) ? parsed : []);
-        }
-
-        if (storedPosts) {
-          const parsed = JSON.parse(storedPosts);
-          setPosts(Array.isArray(parsed) ? parsed : []);
-        }
+        const propertiesData = await getAllProperties();
+        setProperties(propertiesData);
       } catch (err) {
         console.error('Load error:', err);
-        setError('Failed to load data. Please try again.');
+        setError('Failed to load properties. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadData();
+    loadProperties();
   }, []);
-
-  // Save properties and posts
-  const saveData = async (updatedProperties, updatedPosts) => {
-    try {
-      if (!Array.isArray(updatedProperties)) {
-        throw new Error('Invalid data format');
-      }
-      await AsyncStorage.setItem('properties', JSON.stringify(updatedProperties));
-      setProperties(updatedProperties);
-
-      if (updatedPosts) {
-        await AsyncStorage.setItem('posts', JSON.stringify(updatedPosts));
-        setPosts(updatedPosts);
-      }
-      return true;
-    } catch (err) {
-      console.error('Save error:', err);
-      setError('Failed to save data');
-      return false;
-    }
-  };
 
   // Property actions
   const handleAddProperty = () => {
@@ -108,12 +78,12 @@ const AdminDashboard = () => {
 
   const handleEditProperty = (property) => {
     if (!property) return;
-    
+
     setCurrentProperty(property);
     setFormData({
       ...property,
-      features: Array.isArray(property.features) ? 
-        property.features.join(', ') : 
+      features: Array.isArray(property.features) ?
+        property.features.join(', ') :
         String(property.features || '')
     });
     setShowEditModal(true);
@@ -131,37 +101,12 @@ const AdminDashboard = () => {
           text: 'Delete',
           onPress: async () => {
             try {
-              const updated = properties.filter(p => p?.id !== id);
-              const success = await saveData(updated, null);
-              if (!success) throw new Error('Delete failed');
+              await deleteProperty(id);
+              // Update local state after successful deletion
+              setProperties(properties.filter(p => p.id !== id));
             } catch (err) {
+              console.error('Delete error:', err);
               Alert.alert('Error', 'Failed to delete property');
-            }
-          },
-          style: 'destructive'
-        }
-      ]
-    );
-  };
-
-  // Handle post deletion
-  const handleDeletePost = async (id) => {
-    if (!id) return;
-
-    Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this post?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          onPress: async () => {
-            try {
-              const updated = posts.filter(p => p?.id !== id);
-              const success = await saveData(null, updated);
-              if (!success) throw new Error('Delete failed');
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete post');
             }
           },
           style: 'destructive'
@@ -190,33 +135,70 @@ const AdminDashboard = () => {
         title: formData.title.trim(),
         location: formData.location.trim(),
         price: Math.max(0, Number(formData.price)),
-        bedrooms: Math.max(0, Number(formData.bedrooms)),
-        bathrooms: Math.max(0, Number(formData.bathrooms)),
-        features: typeof formData.features === 'string' ? 
-          formData.features.split(',').map(f => f.trim()).filter(f => f) : 
+        bedrooms: Math.max(0, Number(formData.bedrooms)) || 0,
+        bathrooms: Math.max(0, Number(formData.bathrooms)) || 0,
+        features: typeof formData.features === 'string' ?
+          formData.features.split(',').map(f => f.trim()).filter(f => f) :
           [],
-        images: Array.isArray(formData.images) ? 
-          formData.images.filter(img => img) : 
-          [formData.image].filter(Boolean)
+        // Ensure image is a valid URL if not provided
+        image: formData.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+        images: Array.isArray(formData.images) && formData.images.length > 0 ?
+          formData.images.filter(img => img) :
+          [formData.image || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c'].filter(Boolean),
+        // Add property type if not provided
+        type: formData.type || 'buy',
+        propertyType: formData.propertyType || 'house',
+        // Add description if not provided
+        description: formData.description || `${formData.title} located in ${formData.location}`,
+        // Add area if not provided
+        area: formData.area || '100 sqm'
       };
 
-      // Save data
-      let updatedProperties;
+      let result;
+
+      // Add or update property in Firestore
       if (showAddModal) {
-        updatedProperties = [...properties, propertyData];
+        // Add new property
+        console.log('Adding new property:', propertyData);
+        result = await addProperty(propertyData);
+        console.log('Property added successfully with ID:', result.id);
+        setProperties([...properties, result]);
       } else {
-        updatedProperties = properties.map(p => 
-          p?.id === currentProperty?.id ? propertyData : p
-        );
+        // Update existing property
+        console.log('Updating property:', currentProperty.id);
+        result = await updateProperty(currentProperty.id, propertyData);
+        console.log('Property updated successfully:', result.id);
+        setProperties(properties.map(p =>
+          p.id === currentProperty.id ? result : p
+        ));
       }
 
-      const success = await saveData(updatedProperties, null);
-      if (success) {
-        setShowAddModal(false);
-        setShowEditModal(false);
-      }
+      // Close modals
+      setShowAddModal(false);
+      setShowEditModal(false);
+      setError(null);
+
+      // Show success message
+      Alert.alert(
+        'Success',
+        showAddModal ? 'Property added successfully!' : 'Property updated successfully!'
+      );
+
     } catch (err) {
+      console.error('Submission error:', err);
       setError(err.message || 'Submission failed');
+
+      // Show detailed error message
+      Alert.alert(
+        'Error',
+        `Failed to ${showAddModal ? 'add' : 'update'} property: ${err.message}`,
+        [
+          {
+            text: 'OK',
+            onPress: () => console.log('Error alert closed')
+          }
+        ]
+      );
     }
   };
 
@@ -226,8 +208,8 @@ const AdminDashboard = () => {
 
     return (
       <View style={styles.propertyItem}>
-        <Image 
-          source={{ uri: item.image || defaultProperty.image }} 
+        <Image
+          source={{ uri: item.image || defaultProperty.image }}
           style={styles.propertyImage}
           onError={() => console.log('Image load failed')}
         />
@@ -235,84 +217,35 @@ const AdminDashboard = () => {
           <Text style={styles.propertyTitle} numberOfLines={1}>
             {item.title || 'Untitled Property'}
           </Text>
-          
+
           <View style={styles.propertyMeta}>
             <Text style={styles.propertyLocation} numberOfLines={1}>
-              <Ionicons name="location-sharp" size={14} color="#666" /> 
+              <Ionicons name="location-sharp" size={14} color="#666" />
               {item.location || 'No location'}
             </Text>
             <Text style={styles.propertyPrice}>
               ${(item.price || 0).toLocaleString()}
             </Text>
           </View>
-          
+
           <View style={styles.propertyDetails}>
             <DetailItem icon="king-bed" value={`${item.bedrooms || 0} Beds`} />
             <DetailItem icon="bathtub" value={`${item.bathrooms || 0} Baths`} />
             <DetailItem icon="aspect-ratio" value={item.area || 'N/A'} />
           </View>
-          
+
           <View style={styles.propertyActions}>
-            <ActionButton 
-              icon="edit" 
-              label="Edit" 
+            <ActionButton
+              icon="edit"
+              label="Edit"
               color="#29A132"
               onPress={() => handleEditProperty(item)}
             />
-            <ActionButton 
-              icon="trash-2" 
-              label="Delete" 
+            <ActionButton
+              icon="trash-2"
+              label="Delete"
               color="#ff4444"
               onPress={() => handleDeleteProperty(item.id)}
-            />
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  // Post item component
-  const PostItem = ({ item }) => {
-    if (!item) return null;
-
-    return (
-      <View style={styles.propertyItem}>
-        {item.image && (
-          <Image 
-            source={{ uri: item.image }} 
-            style={styles.propertyImage}
-            onError={() => console.log('Image load failed')}
-          />
-        )}
-        <View style={styles.propertyContent}>
-          <Text style={styles.propertyTitle} numberOfLines={1}>
-            {item.title || 'Untitled Post'}
-          </Text>
-          
-          <View style={styles.propertyMeta}>
-            <Text style={styles.propertyLocation} numberOfLines={1}>
-              <Ionicons name="location-sharp" size={14} color="#666" /> 
-              {item.location || 'No location'}
-            </Text>
-            <Text style={styles.propertyPrice}>
-              {item.price || 'No price'}
-            </Text>
-          </View>
-          
-          <Text style={styles.postDescription} numberOfLines={2}>
-            {item.description || 'No description'}
-          </Text>
-          
-          <Text style={styles.postDate}>
-            Posted on: {item.date || 'Unknown date'}
-          </Text>
-          
-          <View style={styles.propertyActions}>
-            <ActionButton 
-              icon="trash-2" 
-              label="Delete" 
-              color="#ff4444"
-              onPress={() => handleDeletePost(item.id)}
             />
           </View>
         </View>
@@ -329,7 +262,7 @@ const AdminDashboard = () => {
   );
 
   const ActionButton = ({ icon, label, color, onPress }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={[styles.actionButton, { backgroundColor: `${color}20` }]}
       onPress={onPress}
     >
@@ -352,7 +285,7 @@ const AdminDashboard = () => {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.primaryButton}
           onPress={() => window.location.reload()}
         >
@@ -366,110 +299,67 @@ const AdminDashboard = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Admin Dashboard</Text>
-        <Text style={styles.headerSubtitle}>Manage Properties and Posts</Text>
+        <Text style={styles.headerTitle}>Property Management</Text>
+        <Text style={styles.headerSubtitle}>Admin Dashboard</Text>
       </View>
 
-      {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'properties' && styles.activeTab]}
-          onPress={() => setActiveTab('properties')}
-        >
-          <Text style={[styles.tabText, activeTab === 'properties' && styles.activeTabText]}>
-            Properties
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
-          onPress={() => setActiveTab('posts')}
-        >
-          <Text style={[styles.tabText, activeTab === 'posts' && styles.activeTabText]}>
-            Posts
-          </Text>
-        </TouchableOpacity>
+      {/* Stats Cards */}
+      <View style={styles.cardRow}>
+        <StatCard
+          value={properties.length}
+          label="Total Properties"
+          icon="home"
+        />
+        <StatCard
+          value={properties.filter(p => p?.type === 'buy').length}
+          label="For Sale"
+          icon="tag"
+        />
+        <StatCard
+          value={properties.filter(p => p?.type === 'rent').length}
+          label="For Rent"
+          icon="key"
+        />
       </View>
 
-      {activeTab === 'properties' ? (
-        <>
-          {/* Stats Cards */}
-          <View style={styles.cardRow}>
-            <StatCard 
-              value={properties.length} 
-              label="Total Properties" 
-              icon="home"
-            />
-            <StatCard 
-              value={properties.filter(p => p?.type === 'buy').length} 
-              label="For Sale" 
-              icon="tag"
-            />
-            <StatCard 
-              value={properties.filter(p => p?.type === 'rent').length} 
-              label="For Rent" 
-              icon="key"
-            />
-          </View>
+      {/* Action Buttons */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Actions</Text>
+        <View style={styles.buttonRow}>
+          <ActionButtonLarge
+            icon="plus"
+            label="Add Property"
+            onPress={handleAddProperty}
+          />
+          <ActionButtonLarge
+            icon="mail"
+            label="Contact Support"
+            onPress={() => Linking.openURL('mailto:support@example.com')}
+          />
+        </View>
+      </View>
 
-          {/* Properties List */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Properties</Text>
-              <Text style={styles.sectionSubtitle}>
-                {properties.length} {properties.length === 1 ? 'property' : 'properties'}
-              </Text>
-            </View>
+      {/* Properties List */}
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Properties</Text>
+          <Text style={styles.sectionSubtitle}>
+            {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+          </Text>
+        </View>
 
-            {properties.length > 0 ? (
-              <FlatList
-                data={properties}
-                renderItem={({ item }) => <PropertyItem item={item} />}
-                keyExtractor={item => item?.id || Math.random().toString()}
-                scrollEnabled={false}
-                contentContainerStyle={styles.listContainer}
-              />
-            ) : (
-              <EmptyState onAddProperty={handleAddProperty} />
-            )}
-          </View>
-        </>
-      ) : (
-        <>
-          {/* Posts Stats */}
-          <View style={styles.cardRow}>
-            <StatCard 
-              value={posts.length} 
-              label="Total Posts" 
-              icon="file-text"
-            />
-          </View>
-
-          {/* Posts List */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Posts</Text>
-              <Text style={styles.sectionSubtitle}>
-                {posts.length} {posts.length === 1 ? 'post' : 'posts'}
-              </Text>
-            </View>
-
-            {posts.length > 0 ? (
-              <FlatList
-                data={posts}
-                renderItem={({ item }) => <PostItem item={item} />}
-                keyExtractor={item => item?.id || Math.random().toString()}
-                scrollEnabled={false}
-                contentContainerStyle={styles.listContainer}
-              />
-            ) : (
-              <View style={styles.emptyState}>
-                <Feather name="file-text" size={48} color="#bdc3c7" />
-                <Text style={styles.emptyText}>No posts found</Text>
-              </View>
-            )}
-          </View>
-        </>
-      )}
+        {properties.length > 0 ? (
+          <FlatList
+            data={properties}
+            renderItem={({ item }) => <PropertyItem item={item} />}
+            keyExtractor={item => item?.id || Math.random().toString()}
+            scrollEnabled={false}
+            contentContainerStyle={styles.listContainer}
+          />
+        ) : (
+          <EmptyState onAddProperty={handleAddProperty} />
+        )}
+      </View>
 
       {/* Property Form Modal */}
       <PropertyFormModal
@@ -545,21 +435,21 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
           <FormField
             label="Title*"
             value={formData.title}
-            onChangeText={text => setFormData({...formData, title: text})}
+            onChangeText={text => setFormData({ ...formData, title: text })}
             placeholder="Property title"
           />
 
           <FormField
             label="Location*"
             value={formData.location}
-            onChangeText={text => setFormData({...formData, location: text})}
+            onChangeText={text => setFormData({ ...formData, location: text })}
             placeholder="Property location"
           />
 
           <FormField
             label="Price*"
             value={String(formData.price)}
-            onChangeText={text => setFormData({...formData, price: text.replace(/[^0-9]/g, '')})}
+            onChangeText={text => setFormData({ ...formData, price: text.replace(/[^0-9]/g, '') })}
             placeholder="0"
             keyboardType="numeric"
           />
@@ -571,12 +461,12 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
                 <ToggleButton
                   label="Buy"
                   active={formData.type === 'buy'}
-                  onPress={() => setFormData({...formData, type: 'buy'})}
+                  onPress={() => setFormData({ ...formData, type: 'buy' })}
                 />
                 <ToggleButton
                   label="Rent"
                   active={formData.type === 'rent'}
-                  onPress={() => setFormData({...formData, type: 'rent'})}
+                  onPress={() => setFormData({ ...formData, type: 'rent' })}
                 />
               </View>
             </View>
@@ -587,12 +477,12 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
                 <ToggleButton
                   label="Apartment"
                   active={formData.propertyType === 'apartment'}
-                  onPress={() => setFormData({...formData, propertyType: 'apartment'})}
+                  onPress={() => setFormData({ ...formData, propertyType: 'apartment' })}
                 />
                 <ToggleButton
                   label="Villa"
                   active={formData.propertyType === 'villa'}
-                  onPress={() => setFormData({...formData, propertyType: 'villa'})}
+                  onPress={() => setFormData({ ...formData, propertyType: 'villa' })}
                 />
               </View>
             </View>
@@ -602,7 +492,7 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
             <FormField
               label="Bedrooms"
               value={String(formData.bedrooms)}
-              onChangeText={text => setFormData({...formData, bedrooms: text.replace(/[^0-9]/g, '')})}
+              onChangeText={text => setFormData({ ...formData, bedrooms: text.replace(/[^0-9]/g, '') })}
               placeholder="0"
               keyboardType="numeric"
               containerStyle={{ flex: 1 }}
@@ -610,7 +500,7 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
             <FormField
               label="Bathrooms"
               value={String(formData.bathrooms)}
-              onChangeText={text => setFormData({...formData, bathrooms: text.replace(/[^0-9]/g, '')})}
+              onChangeText={text => setFormData({ ...formData, bathrooms: text.replace(/[^0-9]/g, '') })}
               placeholder="0"
               keyboardType="numeric"
               containerStyle={{ flex: 1 }}
@@ -618,7 +508,7 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
             <FormField
               label="Area"
               value={formData.area}
-              onChangeText={text => setFormData({...formData, area: text})}
+              onChangeText={text => setFormData({ ...formData, area: text })}
               placeholder="Sq ft"
               containerStyle={{ flex: 1 }}
             />
@@ -627,14 +517,14 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
           <FormField
             label="Main Image URL"
             value={formData.image}
-            onChangeText={text => setFormData({...formData, image: text})}
+            onChangeText={text => setFormData({ ...formData, image: text })}
             placeholder="https://example.com/image.jpg"
           />
 
           <FormField
             label="Additional Images (comma separated)"
             value={formData.images.join(', ')}
-            onChangeText={text => setFormData({...formData, images: text.split(',').map(url => url.trim())})}
+            onChangeText={text => setFormData({ ...formData, images: text.split(',').map(url => url.trim()) })}
             placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
             multiline
           />
@@ -642,7 +532,7 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
           <FormField
             label="Description"
             value={formData.description}
-            onChangeText={text => setFormData({...formData, description: text})}
+            onChangeText={text => setFormData({ ...formData, description: text })}
             placeholder="Property description"
             multiline
             numberOfLines={4}
@@ -651,7 +541,7 @@ const PropertyFormModal = ({ visible, mode, formData, setFormData, error, onSubm
           <FormField
             label="Features (comma separated)"
             value={formData.features}
-            onChangeText={text => setFormData({...formData, features: text})}
+            onChangeText={text => setFormData({ ...formData, features: text })}
             placeholder="Swimming pool, Garden, Parking"
             multiline
           />
@@ -999,41 +889,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    padding: 4,
-    elevation: 2,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  activeTab: {
-    backgroundColor: '#29A132',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-  },
-  activeTabText: {
-    color: '#fff',
-  },
-  postDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginVertical: 8,
-  },
-  postDate: {
-    fontSize: 12,
-    color: '#999',
-    marginBottom: 8,
   },
 });
 

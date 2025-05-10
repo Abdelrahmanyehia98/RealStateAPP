@@ -1,24 +1,63 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, browserLocalPersistence, setPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBYjToFuVDbnkbEVBHyUPruOzwOgtaeow8",
-  authDomain: "app-project-fef04.firebaseapp.com",
-  projectId: "app-project-fef04",
-  storageBucket: "app-project-fef04.firebasestorage.app",
-  messagingSenderId: "203298090968",
-  appId: "1:203298090968:web:acb67d442bcfab9441ccad",
-  measurementId: "G-JHBN8R9PZ3"
+  apiKey: "AIzaSyDBMsgy7FgOnt5gI6yq9c4fNgCzbxXBEv0",
+  authDomain: "project-try-256e7.firebaseapp.com",
+  projectId: "project-try-256e7",
+  storageBucket: "project-try-256e7.firebasestorage.app",
+  messagingSenderId: "280597614578",
+  appId: "1:280597614578:web:19770672dc3fc372a1256b",
+  measurementId: "G-PHE1EDM3YS"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
 
-export { auth, db };
+// Initialize Auth
+const auth = getAuth(app);
+
+// Set persistence to LOCAL (persists even when browser is closed)
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log("Firebase persistence set to local");
+  })
+  .catch((error) => {
+    console.error("Error setting persistence:", error);
+  });
+
+// Initialize other Firebase services
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// Function to test Firebase connection
+const testFirebaseConnection = async () => {
+  try {
+    // Test authentication
+    const authTest = auth.app.name;
+
+    // Test Firestore
+    const dbTest = db.app.name;
+
+    // Test Storage
+    const storageTest = storage.app.name;
+
+    console.log('Firebase connection successful!');
+    console.log('Auth:', authTest);
+    console.log('Firestore:', dbTest);
+    console.log('Storage:', storageTest);
+
+    return true;
+  } catch (error) {
+    console.error('Firebase connection error:', error);
+    return false;
+  }
+};
+
+export { auth, db, storage, testFirebaseConnection };

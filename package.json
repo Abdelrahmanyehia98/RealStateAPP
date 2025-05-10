@@ -4,30 +4,41 @@
   "main": "node_modules/expo-router/entry.js",
   "scripts": {
     "start": "expo start",
+    "start-clear": "expo start --clear",
+    "start-reset": "expo start --clear --no-dev --minify",
     "android": "expo start --android",
+    "android-clear": "expo start --android --clear",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "ios-clear": "expo start --ios --clear",
+    "web": "expo start --web",
+    "web-clear": "expo start --web --clear",
+    "clear-cache": "npx expo-cli cache --clear && npx react-native start --reset-cache",
+    "fix-dependencies": "npm install --legacy-peer-deps",
+    "copy-fonts": "copy-fonts.bat",
+    "postinstall": "copy-fonts.bat",
+    "prebuild": "copy-fonts.bat"
   },
   "dependencies": {
     "@expo/metro-runtime": "~4.0.1",
+    "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-native-firebase/app": "^21.13.0",
     "@react-native-firebase/auth": "^21.13.0",
     "@react-native-picker/picker": "^2.11.0",
     "@react-navigation/native": "^7.1.6",
     "expo": "~52.0.42",
+    "expo-checkbox": "~4.0.1",
+    "expo-image-picker": "~16.0.6",
     "expo-router": "~4.0.20",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-reanimated": "~3.16.1",
-    "react-native-web": "~0.19.13",
-    "expo-image-picker": "~16.0.6",
-    "expo-checkbox": "~4.0.1",
-    "@react-native-async-storage/async-storage": "1.23.1"
+    "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@react-native-community/cli": "^12.3.5",
     "@types/react": "~18.3.12",
     "@types/react-native": "^0.72.8",
     "typescript": "^5.3.3"

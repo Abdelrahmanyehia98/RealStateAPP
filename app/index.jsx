@@ -10,68 +10,18 @@ import {
   Image,
   Dimensions,
   Linking,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getAllProperties, getFilteredProperties } from '../services/firestore';
 
-
+// Define global cart data
 if (!global.cartItems) {
   global.cartItems = [];
 }
-
-const properties = [
-  {
-    id: '1',
-    title: 'Luxury Villa',
-    location: 'Maadi',
-    price: '200000',
-    type: 'buy',
-    propertyType: 'villa',
-    bedrooms: '4',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  },
-  {
-    id: '2',
-    title: 'Downtown Apartment',
-    location: 'Zamalek',
-    price: '85000',
-    type: 'buy',
-    propertyType: 'apartment',
-    bedrooms: '2',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  },
-  {
-    id: '3',
-    title: 'Beach House',
-    location: 'Haram',
-    price: '150000',
-    type: 'buy',
-    propertyType: 'house',
-    bedrooms: '3',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  },
-  {
-    id: '4',
-    title: 'Office Space',
-    location: 'Downtown',
-    price: '120000',
-    type: 'rent',
-    propertyType: 'office',
-    bedrooms: '0',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  },
-  {
-    id: '5',
-    title: 'Retail Shop',
-    location: 'Mohandeseen',
-    price: '95000',
-    type: 'rent',
-    propertyType: 'shop',
-    bedrooms: '0',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
-  },
-];
 
 export default function App() {
   const router = useRouter();
@@ -81,9 +31,12 @@ export default function App() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [bedrooms, setBedrooms] = useState("");
-  const [filteredProperties, setFilteredProperties] = useState(properties);
+  const [properties, setProperties] = useState([]);
+  const [filteredProperties, setFilteredProperties] = useState([]);
   const [numColumns, setNumColumns] = useState(getNumColumns());
   const [cartItems, setCartItems] = useState(global.cartItems);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   function getNumColumns() {
     const screenWidth = Dimensions.get("window").width;
@@ -92,6 +45,7 @@ export default function App() {
     return 3;
   }
 
+  // Handle screen size changes
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", () => {
       setNumColumns(getNumColumns());
@@ -99,44 +53,70 @@ export default function App() {
     return () => subscription?.remove();
   }, []);
 
+  // Update cart items when global cart changes
   useEffect(() => {
     setCartItems(global.cartItems);
   }, [global.cartItems]);
 
-  const handleSearch = () => {
-    const filtered = properties.filter((property) => {
-      const matchesSearch =
-        !searchQuery ||
-        property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        property.location.toLowerCase().includes(searchQuery.toLowerCase());
+  // Load properties from Firestore
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        setLoading(true);
+        const propertiesData = await getAllProperties();
+        setProperties(propertiesData);
+        setFilteredProperties(propertiesData);
+        setError(null);
+      } catch (err) {
+        console.error('Error loading properties:', err);
+        setError('Failed to load properties. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      const matchesType =
-        selectedType === "any" || property.type === selectedType;
-      const matchesProperty =
-        selectedProperty === "any" ||
-        property.propertyType === selectedProperty;
-      const matchesMinPrice =
-        minPrice === "" || property.price >= parseInt(minPrice);
-      const matchesMaxPrice =
-        maxPrice === "" || property.price <= parseInt(maxPrice);
-      const matchesBedrooms =
-        bedrooms === "" || property.bedrooms == parseInt(bedrooms);
+    loadProperties();
+  }, []);
 
-      return (
-        matchesSearch &&
-        matchesType &&
-        matchesProperty &&
-        matchesMinPrice &&
-        matchesMaxPrice &&
-        matchesBedrooms
-      );
-    });
+  // Handle search and filtering
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
 
-    setFilteredProperties(filtered);
+      // If there's a search query, filter client-side
+      if (searchQuery) {
+        const filtered = properties.filter((property) => {
+          return property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            property.location.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+        setFilteredProperties(filtered);
+      }
+      // Otherwise, use Firestore filtering
+      else {
+        const filters = {
+          type: selectedType !== 'any' ? selectedType : null,
+          propertyType: selectedProperty !== 'any' ? selectedProperty : null,
+          minPrice: minPrice ? parseInt(minPrice) : null,
+          maxPrice: maxPrice ? parseInt(maxPrice) : null,
+          bedrooms: bedrooms ? parseInt(bedrooms) : null
+        };
+
+        const filtered = await getFilteredProperties(filters);
+        setFilteredProperties(filtered);
+      }
+    } catch (err) {
+      console.error('Error filtering properties:', err);
+      setError('Failed to filter properties. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Apply filters when search criteria change
   useEffect(() => {
-    handleSearch();
+    if (properties.length > 0) {
+      handleSearch();
+    }
   }, [
     searchQuery,
     selectedType,
@@ -144,6 +124,7 @@ export default function App() {
     minPrice,
     maxPrice,
     bedrooms,
+    properties.length
   ]);
 
   const renderProperty = ({ item }) => (
@@ -158,7 +139,7 @@ export default function App() {
       <View style={styles.cardContent}>
         <View style={styles.cardHeader}>
           <Text style={styles.cardTitle}>{item.title}</Text>
-         
+
         </View>
         <View style={styles.cardLocation}>
           <Ionicons name="location-sharp" size={16} color="#27ae60" />
@@ -180,6 +161,79 @@ export default function App() {
     </TouchableOpacity>
   );
 
+  // Render loading indicator
+  if (loading && properties.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#27ae60" />
+        <Text style={styles.loadingText}>Loading properties...</Text>
+      </View>
+    );
+  }
+
+  // Render error message
+  if (error && properties.length === 0) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle" size={50} color="#e74c3c" />
+        <Text style={styles.errorText}>{error}</Text>
+
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => {
+            setError(null);
+            setLoading(true);
+            getAllProperties()
+              .then(data => {
+                setProperties(data);
+                setFilteredProperties(data);
+                setLoading(false);
+              })
+              .catch(err => {
+                setError('Failed to load properties. Please try again.');
+                setLoading(false);
+              });
+          }}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.retryButton, { marginTop: 10, backgroundColor: '#3498db' }]}
+          onPress={async () => {
+            try {
+              setError(null);
+              setLoading(true);
+
+              // Import the sample properties
+              const { sampleProperties } = require('../data/sampleProperties');
+              const { addProperty } = require('../services/firestore');
+
+              // Add the first sample property
+              const result = await addProperty(sampleProperties[0]);
+              console.log('Added sample property with ID:', result.id);
+
+              // Refresh the properties list
+              const updatedProperties = await getAllProperties();
+              setProperties(updatedProperties);
+              setFilteredProperties(updatedProperties);
+              setLoading(false);
+
+              // Show success message
+              Alert.alert('Success', 'Sample property added successfully!');
+            } catch (err) {
+              console.error('Error adding sample property:', err);
+              setError('Failed to add sample property. Please try again.');
+              setLoading(false);
+            }
+          }}
+        >
+          <Text style={styles.retryButtonText}>Add Sample Property</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -200,9 +254,16 @@ export default function App() {
         </View>
       </View>
 
+      {loading && (
+        <View style={styles.inlineLoadingContainer}>
+          <ActivityIndicator size="small" color="#27ae60" />
+          <Text style={styles.inlineLoadingText}>Updating results...</Text>
+        </View>
+      )}
+
       <View style={styles.filtersSection}>
         <Text style={styles.sectionTitle}>Filter Properties</Text>
-        
+
         <View style={styles.filterRow}>
           <View style={styles.filterGroup}>
             <Text style={styles.filterLabel}>Type</Text>
@@ -299,24 +360,24 @@ export default function App() {
       <View style={styles.footer}>
         <Text style={styles.footerText}>© 2024 Realestate. All rights reserved.</Text>
         <View style={styles.socialIcons}>
-          <Ionicons 
-            name="logo-facebook" 
-            size={24} 
-            color="#27ae60" 
+          <Ionicons
+            name="logo-facebook"
+            size={24}
+            color="#27ae60"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://facebook.com')}
           />
-          <Ionicons 
-            name="logo-twitter" 
-            size={24} 
-            color="#27ae60" 
+          <Ionicons
+            name="logo-twitter"
+            size={24}
+            color="#27ae60"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://twitter.com')}
           />
-          <Ionicons 
-            name="logo-instagram" 
-            size={24} 
-            color="#27ae60" 
+          <Ionicons
+            name="logo-instagram"
+            size={24}
+            color="#27ae60"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://instagram.com')}
           />
@@ -330,6 +391,55 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#27ae60',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#e74c3c',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#27ae60',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  inlineLoadingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f0f9f4',
+    borderRadius: 5,
+    marginVertical: 10,
+  },
+  inlineLoadingText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#27ae60',
   },
   header: {
     padding: 20,
