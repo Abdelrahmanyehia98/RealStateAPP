@@ -6,7 +6,7 @@ const SearchParameters = ({ params, onClearParam }) => {
   if (!params || Object.keys(params).length === 0) {
     return null;
   }
-  
+
   const getDisplayText = (key, value) => {
     switch (key) {
       case 'bedrooms':
@@ -23,9 +23,10 @@ const SearchParameters = ({ params, onClearParam }) => {
         return value;
       default:
         return `${key}: ${value}`;
+
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
@@ -37,10 +38,10 @@ const SearchParameters = ({ params, onClearParam }) => {
       <View style={styles.paramsContainer}>
         {Object.entries(params).map(([key, value]) => {
           if (!value && value !== 0) return null;
-          
+
           return (
-            <TouchableOpacity 
-              key={key} 
+            <TouchableOpacity
+              key={key}
               style={styles.paramTag}
               onPress={() => onClearParam(key)}
             >

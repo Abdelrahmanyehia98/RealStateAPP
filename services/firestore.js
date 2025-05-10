@@ -238,6 +238,31 @@ export const deleteProperty = async (id) => {
 };
 
 /**
+ * Get properties by user ID
+ * @param {string} userId - User ID
+ * @returns {Promise<Array>} Array of property objects added by the user
+ */
+export const getPropertiesByUserId = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const propertiesRef = collection(db, PROPERTIES_COLLECTION);
+    const q = query(propertiesRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Error getting user properties:', error);
+    throw error;
+  }
+};
+
+/**
  * Upload a property image to Firebase Storage
  * @param {string} uri - Image URI
  * @returns {Promise<string>} Download URL

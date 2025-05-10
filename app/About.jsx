@@ -8,7 +8,7 @@ const AboutScreen = () => {
       <View style={styles.header}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('./../assets/Screenshot 2024-12-10 025803.png')} 
+            source={require('./../assets/Screenshot 2024-12-10 025803.png')}
             style={styles.logo}
           />
         </View>
@@ -21,15 +21,15 @@ const AboutScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>About Our App</Text>
         <Text style={styles.description}>
-          Realestate is a comprehensive real estate platform designed to simplify your property search. 
-          Whether you're looking to buy, rent, or sell, our app connects you with the best properties 
+          Realestate is a comprehensive real estate platform designed to simplify your property search.
+          Whether you're looking to buy, rent, or sell, our app connects you with the best properties
           and real estate professionals in your area.
         </Text>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Key Features</Text>
-        
+
         <View style={styles.featureItem}>
           <Ionicons name="search" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
@@ -37,7 +37,7 @@ const AboutScreen = () => {
             <Text style={styles.featureDesc}>Filter properties by location, price, bedrooms, and more.</Text>
           </View>
         </View>
-        
+
         <View style={styles.featureItem}>
           <MaterialIcons name="virtual-tour" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
@@ -45,7 +45,7 @@ const AboutScreen = () => {
             <Text style={styles.featureDesc}>Explore properties with 360° virtual tours from anywhere.</Text>
           </View>
         </View>
-        
+
         <View style={styles.featureItem}>
           <Ionicons name="notifications" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
@@ -53,7 +53,7 @@ const AboutScreen = () => {
             <Text style={styles.featureDesc}>Get notified when new properties match your criteria.</Text>
           </View>
         </View>
-        
+
         <View style={styles.featureItem}>
           <FontAwesome name="handshake-o" size={24} color="#29A132" style={styles.featureIcon} />
           <View style={styles.featureText}>
@@ -66,11 +66,11 @@ const AboutScreen = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Our Company</Text>
         <Text style={styles.description}>
-          Founded in 2020, Realestate Technologies has revolutionized the real estate industry with 
-          innovative technology solutions. We partner with thousands of brokers and agents nationwide 
+          Founded in 2020, Realestate Technologies has revolutionized the real estate industry with
+          innovative technology solutions. We partner with thousands of brokers and agents nationwide
           to bring you the most comprehensive property listings.
         </Text>
-        
+
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statNumber}>50K+</Text>
@@ -89,37 +89,37 @@ const AboutScreen = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Contact Us</Text>
-        
+
         <View style={styles.contactItem}>
           <Ionicons name="mail" size={20} color="#29A132" style={styles.contactIcon} />
-          <Text 
+          <Text
             style={styles.contactText}
             onPress={() => Linking.openURL('mailto:support@gmail.com')}
           >
             support@gmail.com
           </Text>
         </View>
-        
+
         <View style={styles.contactItem}>
           <Ionicons name="call" size={20} color="#29A132" style={styles.contactIcon} />
-          <Text 
+          <Text
             style={styles.contactText}
             onPress={() => Linking.openURL('tel:+01001012277')}
           >
             01001012277
           </Text>
         </View>
-        
+
         <View style={styles.contactItem}>
           <Ionicons name="globe" size={20} color="#29A132" style={styles.contactIcon} />
-          <Text 
+          <Text
             style={styles.contactText}
             onPress={() => Linking.openURL('https://www.Realestate.com')}
           >
             www.Realestate.com
           </Text>
         </View>
-        
+
         <View style={styles.contactItem}>
           <Ionicons name="location" size={20} color="#29A132" style={styles.contactIcon} />
           <Text style={styles.contactText}>123 Real Estate Ave, street 100, Ard ellewaa</Text>
@@ -129,31 +129,31 @@ const AboutScreen = () => {
       <View style={styles.footer}>
         <Text style={styles.footerText}>© 2024 Realestate Technologies. All rights reserved.</Text>
         <View style={styles.socialIcons}>
-          <Ionicons 
-            name="logo-facebook" 
-            size={24} 
-            color="#29A132" 
+          <Ionicons
+            name="logo-facebook"
+            size={24}
+            color="#29A132"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://facebook.com')}
           />
-          <Ionicons 
-            name="logo-twitter" 
-            size={24} 
-            color="#29A132" 
+          <Ionicons
+            name="logo-twitter"
+            size={24}
+            color="#29A132"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://twitter.com')}
           />
-          <Ionicons 
-            name="logo-instagram" 
-            size={24} 
-            color="#29A132" 
+          <Ionicons
+            name="logo-instagram"
+            size={24}
+            color="#29A132"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://instagram.com')}
           />
-          <Ionicons 
-            name="logo-linkedin" 
-            size={24} 
-            color="#29A132" 
+          <Ionicons
+            name="logo-linkedin"
+            size={24}
+            color="#29A132"
             style={styles.socialIcon}
             onPress={() => Linking.openURL('https://linkedin.com')}
           />

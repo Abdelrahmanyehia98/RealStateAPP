@@ -17,6 +17,7 @@ import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { auth, db } from '../firebase';
 import { updateProfile } from "firebase/auth";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPropertiesByUserId } from '../services/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -26,7 +27,7 @@ export default function Profile() {
   const [profileImage, setProfileImage] = useState(null);
   const [showAddPostModal, setShowAddPostModal] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
-  
+
   // User data state
   const [userData, setUserData] = useState({
     name: '',
@@ -39,6 +40,8 @@ export default function Profile() {
   });
 
   const [posts, setPosts] = useState([]);
+  const [userProperties, setUserProperties] = useState([]);
+  const [loadingProperties, setLoadingProperties] = useState(false);
   const [newPost, setNewPost] = useState({
     title: '',
     description: '',
@@ -47,7 +50,7 @@ export default function Profile() {
     image: null
   });
 
-  const [editedData, setEditedData] = useState({...userData});
+  const [editedData, setEditedData] = useState({ ...userData });
 
   // Fetch user data on component mount
   useEffect(() => {
@@ -94,6 +97,9 @@ export default function Profile() {
               savedProperties: 0
             });
           }
+
+          // Fetch user's properties from Firestore
+          fetchUserProperties(user.uid);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -104,6 +110,29 @@ export default function Profile() {
     fetchUserData();
     loadLocalPosts();
   }, []);
+
+  // Fetch user's properties from Firestore
+  const fetchUserProperties = async (userId) => {
+    if (!userId) return;
+
+    try {
+      setLoadingProperties(true);
+      const properties = await getPropertiesByUserId(userId);
+      setUserProperties(properties);
+
+      // Update the listings count in userData
+      setUserData(prevData => ({
+        ...prevData,
+        listings: properties.length
+      }));
+
+    } catch (error) {
+      console.error("Error fetching user properties:", error);
+      Alert.alert("Error", "Failed to load your properties");
+    } finally {
+      setLoadingProperties(false);
+    }
+  };
 
   // Load posts from local storage
   const loadLocalPosts = async () => {
@@ -180,13 +209,13 @@ export default function Profile() {
       setLoading(true);
       try {
         const imageUri = result.assets[0].uri;
-        
+
         // Save to AsyncStorage
         await AsyncStorage.setItem('@profile_image', imageUri);
-        
+
         // Update local state
         setProfileImage(imageUri);
-        
+
         Alert.alert('Success', 'Profile picture updated successfully!');
       } catch (error) {
         console.error('Error updating profile picture:', error);
@@ -214,9 +243,9 @@ export default function Profile() {
     if (!result.canceled && result.assets[0]) {
       const imageUri = result.assets[0].uri;
       if (editingPost) {
-        setEditingPost({...editingPost, image: imageUri});
+        setEditingPost({ ...editingPost, image: imageUri });
       } else {
-        setNewPost({...newPost, image: imageUri});
+        setNewPost({ ...newPost, image: imageUri });
       }
     }
   };
@@ -263,7 +292,7 @@ export default function Profile() {
         image: null
       });
       setShowAddPostModal(false);
-      
+
       Alert.alert('Success', 'Post added successfully!');
     } catch (error) {
       console.error('Error adding post:', error);
@@ -281,10 +310,10 @@ export default function Profile() {
 
     setLoading(true);
     try {
-      const updatedPosts = posts.map(post => 
+      const updatedPosts = posts.map(post =>
         post.id === editingPost.id ? editingPost : post
       );
-      
+
       setPosts(updatedPosts);
       await savePostsLocally(updatedPosts);
 
@@ -307,27 +336,27 @@ export default function Profile() {
           text: "Cancel",
           style: "cancel"
         },
-        { 
-          text: "Delete", 
+        {
+          text: "Delete",
           onPress: async () => {
             try {
               setLoading(true);
               // Filter out the post to be deleted
               const updatedPosts = posts.filter(post => post.id !== postId);
-              
+
               // Update state
               setPosts(updatedPosts);
-              
+
               // Update AsyncStorage
               await savePostsLocally(updatedPosts);
-              
+
               // Update listings count in user data
               const updatedUserData = {
                 ...userData,
                 listings: updatedPosts.length
               };
               setUserData(updatedUserData);
-              
+
               // Update Firestore if needed
               const user = auth.currentUser;
               if (user) {
@@ -335,7 +364,7 @@ export default function Profile() {
                   listings: updatedPosts.length
                 });
               }
-              
+
               Alert.alert('Success', 'Post deleted successfully');
             } catch (error) {
               console.error("Error deleting post:", error);
@@ -354,49 +383,49 @@ export default function Profile() {
       <TextInput
         style={styles.input}
         value={editedData.name}
-        onChangeText={(text) => setEditedData({...editedData, name: text})}
+        onChangeText={(text) => setEditedData({ ...editedData, name: text })}
         placeholder="Full Name"
       />
       <TextInput
         style={styles.input}
         value={editedData.email}
-        onChangeText={(text) => setEditedData({...editedData, email: text})}
+        onChangeText={(text) => setEditedData({ ...editedData, email: text })}
         placeholder="Email"
         keyboardType="email-address"
       />
       <TextInput
         style={styles.input}
         value={editedData.phone}
-        onChangeText={(text) => setEditedData({...editedData, phone: text})}
+        onChangeText={(text) => setEditedData({ ...editedData, phone: text })}
         placeholder="Phone Number"
         keyboardType="phone-pad"
       />
       <TextInput
         style={styles.input}
         value={editedData.location}
-        onChangeText={(text) => setEditedData({...editedData, location: text})}
+        onChangeText={(text) => setEditedData({ ...editedData, location: text })}
         placeholder="Location"
       />
       <TextInput
         style={[styles.input, styles.bioInput]}
         value={editedData.bio}
-        onChangeText={(text) => setEditedData({...editedData, bio: text})}
+        onChangeText={(text) => setEditedData({ ...editedData, bio: text })}
         placeholder="Bio"
         multiline
         numberOfLines={4}
       />
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={[styles.button, styles.cancelButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.cancelButton]}
           onPress={() => {
-            setEditedData({...userData});
+            setEditedData({ ...userData });
             setIsEditing(false);
           }}
         >
           <Text style={styles.buttonText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.button, styles.saveButton]} 
+        <TouchableOpacity
+          style={[styles.button, styles.saveButton]}
           onPress={handleSave}
           disabled={loading}
         >
@@ -446,7 +475,7 @@ export default function Profile() {
         </View>
       </View>
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.editButton}
         onPress={() => setIsEditing(true)}
       >
@@ -469,13 +498,13 @@ export default function Profile() {
             style={styles.input}
             placeholder="Title"
             value={newPost.title}
-            onChangeText={(text) => setNewPost({...newPost, title: text})}
+            onChangeText={(text) => setNewPost({ ...newPost, title: text })}
           />
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Description"
             value={newPost.description}
-            onChangeText={(text) => setNewPost({...newPost, description: text})}
+            onChangeText={(text) => setNewPost({ ...newPost, description: text })}
             multiline
             numberOfLines={4}
           />
@@ -483,16 +512,16 @@ export default function Profile() {
             style={styles.input}
             placeholder="Price"
             value={newPost.price}
-            onChangeText={(text) => setNewPost({...newPost, price: text})}
+            onChangeText={(text) => setNewPost({ ...newPost, price: text })}
             keyboardType="numeric"
           />
           <TextInput
             style={styles.input}
             placeholder="Location"
             value={newPost.location}
-            onChangeText={(text) => setNewPost({...newPost, location: text})}
+            onChangeText={(text) => setNewPost({ ...newPost, location: text })}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.imagePickerButton}
             onPress={handlePostImagePick}
           >
@@ -501,20 +530,20 @@ export default function Profile() {
             </Text>
           </TouchableOpacity>
           {newPost.image && (
-            <Image 
-              source={{ uri: newPost.image }} 
-              style={styles.postImagePreview} 
+            <Image
+              source={{ uri: newPost.image }}
+              style={styles.postImagePreview}
               resizeMode="cover"
             />
           )}
           <View style={styles.modalButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.modalButton, styles.cancelButton]}
               onPress={() => setShowAddPostModal(false)}
             >
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.modalButton, styles.saveButton]}
               onPress={handleAddPost}
               disabled={loading}
@@ -545,13 +574,13 @@ export default function Profile() {
             style={styles.input}
             placeholder="Title"
             value={editingPost?.title}
-            onChangeText={(text) => setEditingPost({...editingPost, title: text})}
+            onChangeText={(text) => setEditingPost({ ...editingPost, title: text })}
           />
           <TextInput
             style={[styles.input, styles.textArea]}
             placeholder="Description"
             value={editingPost?.description}
-            onChangeText={(text) => setEditingPost({...editingPost, description: text})}
+            onChangeText={(text) => setEditingPost({ ...editingPost, description: text })}
             multiline
             numberOfLines={4}
           />
@@ -559,16 +588,16 @@ export default function Profile() {
             style={styles.input}
             placeholder="Price"
             value={editingPost?.price}
-            onChangeText={(text) => setEditingPost({...editingPost, price: text})}
+            onChangeText={(text) => setEditingPost({ ...editingPost, price: text })}
             keyboardType="numeric"
           />
           <TextInput
             style={styles.input}
             placeholder="Location"
             value={editingPost?.location}
-            onChangeText={(text) => setEditingPost({...editingPost, location: text})}
+            onChangeText={(text) => setEditingPost({ ...editingPost, location: text })}
           />
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.imagePickerButton}
             onPress={handlePostImagePick}
           >
@@ -577,20 +606,20 @@ export default function Profile() {
             </Text>
           </TouchableOpacity>
           {editingPost?.image && (
-            <Image 
-              source={{ uri: editingPost.image }} 
-              style={styles.postImagePreview} 
+            <Image
+              source={{ uri: editingPost.image }}
+              style={styles.postImagePreview}
               resizeMode="cover"
             />
           )}
           <View style={styles.modalButtons}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.modalButton, styles.cancelButton]}
               onPress={() => setEditingPost(null)}
             >
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.modalButton, styles.saveButton]}
               onPress={handleEditPost}
               disabled={loading}
@@ -611,7 +640,7 @@ export default function Profile() {
     <View style={styles.postsContainer}>
       <View style={styles.postsHeader}>
         <Text style={styles.postsTitle}>My Posts</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.addPostButton}
           onPress={() => setShowAddPostModal(true)}
         >
@@ -626,9 +655,9 @@ export default function Profile() {
         posts.map(post => (
           <View key={post.id} style={styles.postCard}>
             {post.image && (
-              <Image 
-                source={{ uri: post.image }} 
-                style={styles.postImage} 
+              <Image
+                source={{ uri: post.image }}
+                style={styles.postImage}
                 resizeMode="cover"
               />
             )}
@@ -643,13 +672,13 @@ export default function Profile() {
                 {new Date(post.createdAt).toLocaleDateString()}
               </Text>
               <View style={styles.postActions}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.postActionButton, styles.editButton]}
                   onPress={() => setEditingPost(post)}
                 >
                   <Text style={styles.postActionButtonText}>Edit</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.postActionButton, styles.deleteButton]}
                   onPress={() => handleDeletePost(post.id)}
                   disabled={loading}
@@ -660,6 +689,69 @@ export default function Profile() {
                     <Text style={styles.postActionButtonText}>Delete</Text>
                   )}
                 </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ))
+      )}
+    </View>
+  );
+
+  // Render user's properties from Firestore
+  const renderUserProperties = () => (
+    <View style={styles.propertiesContainer}>
+      <View style={styles.postsHeader}>
+        <Text style={styles.postsTitle}>My Properties</Text>
+      </View>
+
+      {loadingProperties ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#29A132" />
+          <Text style={styles.loadingText}>Loading your properties...</Text>
+        </View>
+      ) : userProperties.length === 0 ? (
+        <View style={styles.noPostsContainer}>
+          <Text style={styles.noPostsText}>No properties found. Add a property from the Sell tab!</Text>
+        </View>
+      ) : (
+        userProperties.map(property => (
+          <View key={property.id} style={styles.propertyCard}>
+            {property.image && (
+              <Image
+                source={{ uri: property.image }}
+                style={styles.propertyImage}
+                resizeMode="cover"
+              />
+            )}
+            <View style={styles.propertyContent}>
+              <Text style={styles.propertyTitle}>{property.title}</Text>
+              <Text style={styles.propertyDescription} numberOfLines={2}>
+                {property.description}
+              </Text>
+              <View style={styles.propertyDetails}>
+                <Text style={styles.propertyPrice}>${property.price?.toLocaleString()}</Text>
+                <Text style={styles.propertyLocation}>{property.location}</Text>
+              </View>
+              <View style={styles.propertyFeatures}>
+                <Text style={styles.propertyFeature}>{property.type}</Text>
+                <Text style={styles.propertyFeature}>{property.propertyType}</Text>
+                <Text style={styles.propertyFeature}>{property.bedrooms} BR</Text>
+                <Text style={styles.propertyFeature}>{property.area}</Text>
+              </View>
+              <View style={styles.propertyStatus}>
+                <Text style={[
+                  styles.statusText,
+                  property.status === 'approved' ? styles.statusApproved :
+                    property.status === 'pending' ? styles.statusPending :
+                      styles.statusRejected
+                ]}>
+                  {property.status || 'pending'}
+                </Text>
+                {property.createdAt && (
+                  <Text style={styles.propertyDate}>
+                    Added: {new Date(property.createdAt.seconds * 1000).toLocaleDateString()}
+                  </Text>
+                )}
               </View>
             </View>
           </View>
@@ -690,6 +782,7 @@ export default function Profile() {
       </View>
 
       {isEditing ? renderEditMode() : renderViewMode()}
+      {renderUserProperties()}
       {renderPosts()}
       {renderAddPostModal()}
       {renderEditPostModal()}
@@ -742,6 +835,110 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+  },
+  propertiesContainer: {
+    padding: 20,
+    marginBottom: 20,
+  },
+  propertyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  propertyImage: {
+    width: '100%',
+    height: 180,
+    resizeMode: 'cover',
+  },
+  propertyContent: {
+    padding: 16,
+  },
+  propertyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  propertyDescription: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 12,
+  },
+  propertyDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  propertyPrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#29A132',
+  },
+  propertyLocation: {
+    fontSize: 14,
+    color: '#666',
+  },
+  propertyFeatures: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+    gap: 8,
+  },
+  propertyFeature: {
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  propertyStatus: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: '600',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 4,
+    textTransform: 'capitalize',
+  },
+  statusApproved: {
+    backgroundColor: '#e6f7e6',
+    color: '#29A132',
+  },
+  statusPending: {
+    backgroundColor: '#fff4e5',
+    color: '#f5a623',
+  },
+  statusRejected: {
+    backgroundColor: '#ffe6e6',
+    color: '#ff4444',
+  },
+  propertyDate: {
+    fontSize: 12,
+    color: '#999',
   },
   statsContainer: {
     flexDirection: 'row',

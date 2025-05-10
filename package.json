@@ -15,7 +15,6 @@
     "clear-cache": "npx expo-cli cache --clear && npx react-native start --reset-cache",
     "fix-dependencies": "npm install --legacy-peer-deps",
     "copy-fonts": "copy-fonts.bat",
-    "postinstall": "copy-fonts.bat",
     "prebuild": "copy-fonts.bat"
   },
   "dependencies": {
