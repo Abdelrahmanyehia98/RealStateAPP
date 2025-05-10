@@ -17,6 +17,8 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getAllProperties, getFilteredProperties } from '../services/firestore';
+import SmartSearch from './SmartSearch'; 
+import SearchParameters from './SearchParameters';
 
 
 if (!global.cartItems) {
@@ -37,6 +39,7 @@ export default function App() {
   const [cartItems, setCartItems] = useState(global.cartItems);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [aiSearchParams, setAiSearchParams] = useState({});
 
   function getNumColumns() {
     const screenWidth = Dimensions.get("window").width;
@@ -80,43 +83,135 @@ export default function App() {
 
 
   const handleSearch = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // If there's a search query, filter client-side
-      if (searchQuery) {
-        const filtered = properties.filter((property) => {
-          return property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            property.location.toLowerCase().includes(searchQuery.toLowerCase());
-        });
-        setFilteredProperties(filtered);
-      }
-      // Otherwise, use Firestore filtering
-      else {
-        const filters = {
-          type: selectedType !== 'any' ? selectedType : null,
-          propertyType: selectedProperty !== 'any' ? selectedProperty : null,
-          minPrice: minPrice ? parseInt(minPrice) : null,
-          maxPrice: maxPrice ? parseInt(maxPrice) : null,
-          bedrooms: bedrooms ? parseInt(bedrooms) : null
-        };
+    
+    if (searchQuery || Object.values(aiSearchParams).some(param => param)) {
+      const filtered = properties.filter((property) => {
+        const matchesSearch =
+          !searchQuery ||
+          property.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          property.location.toLowerCase().includes(searchQuery.toLowerCase());
 
-        const filtered = await getFilteredProperties(filters);
-        setFilteredProperties(filtered);
-      }
-    } catch (err) {
-      console.error('Error filtering properties:', err);
-      setError('Failed to filter properties. Please try again.');
-    } finally {
-      setLoading(false);
+        // AI-based search parameters
+        const matchesLocation = !aiSearchParams.location || 
+          property.location.toLowerCase().includes(aiSearchParams.location.toLowerCase());
+          
+        const matchesPropertyType = !aiSearchParams.propertyType || 
+          property.propertyType === aiSearchParams.propertyType;
+          
+        const matchesType = !aiSearchParams.type || 
+          property.type === aiSearchParams.type;
+          
+        const matchesBedrooms = !aiSearchParams.bedrooms || 
+          parseInt(property.bedrooms) >= parseInt(aiSearchParams.bedrooms);
+          
+        const matchesMinPrice = 
+          (!minPrice && !aiSearchParams.minPrice) || 
+          (aiSearchParams.minPrice ? property.price >= parseInt(aiSearchParams.minPrice) : true) ||
+          (minPrice ? property.price >= parseInt(minPrice) : true);
+          
+        const matchesMaxPrice = 
+          (!maxPrice && !aiSearchParams.maxPrice) || 
+          (aiSearchParams.maxPrice ? property.price <= parseInt(aiSearchParams.maxPrice) : true) ||
+          (maxPrice ? property.price <= parseInt(maxPrice) : true);
+
+        // Existing filters
+        const matchesSelectedType =
+          selectedType === "any" || property.type === selectedType;
+        const matchesSelectedProperty =
+          selectedProperty === "any" ||
+          property.propertyType === selectedProperty;
+        const matchesMinPriceInput =
+          minPrice === "" || property.price >= parseInt(minPrice);
+        const matchesMaxPriceInput =
+          maxPrice === "" || property.price <= parseInt(maxPrice);
+        const matchesBedroomsInput =
+          bedrooms === "" || property.bedrooms >= parseInt(bedrooms);
+
+        return (
+          matchesSearch &&
+          matchesLocation &&
+          matchesPropertyType &&
+          matchesType &&
+          matchesBedrooms &&
+          matchesMinPrice &&
+          matchesMaxPrice &&
+          matchesSelectedType &&
+          matchesSelectedProperty &&
+          matchesMinPriceInput &&
+          matchesMaxPriceInput &&
+          matchesBedroomsInput
+        );
+      });
+      setFilteredProperties(filtered);
     }
+  
+    else {
+      const filters = {
+        type: selectedType !== 'any' ? selectedType : null,
+        propertyType: selectedProperty !== 'any' ? selectedProperty : null,
+        minPrice: minPrice ? parseInt(minPrice) : null,
+        maxPrice: maxPrice ? parseInt(maxPrice) : null,
+        bedrooms: bedrooms ? parseInt(bedrooms) : null
+      };
+
+      const filtered = await getFilteredProperties(filters);
+      setFilteredProperties(filtered);
+    }
+  } catch (err) {
+    console.error('Error filtering properties:', err);
+    setError('Failed to filter properties. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+useEffect(() => {
+  if (properties.length > 0) {
+    handleSearch();
+  }
+}, [
+  searchQuery,
+  selectedType,
+  selectedProperty,
+  minPrice,
+  maxPrice,
+  bedrooms,
+  properties.length,
+  aiSearchParams 
+]);
+const handleAiSearch = (params) => {
+    setAiSearchParams(params);
+    
+    // update the UI filters to match AI parameters
+    if (params.type) setSelectedType(params.type);
+    if (params.propertyType) setSelectedProperty(params.propertyType);
+    if (params.minPrice) setMinPrice(params.minPrice.toString());
+    if (params.maxPrice) setMaxPrice(params.maxPrice.toString());
+    if (params.bedrooms) setBedrooms(params.bedrooms.toString());
+    
+    
+    setSearchQuery('');
+  };
+  
+  // Add a function to clear AI search parameters
+  const clearSearchParam = (paramKey) => {
+    if (paramKey === 'all') {
+      setAiSearchParams({});
+      return;
+    }
+    
+    const updatedParams = {...aiSearchParams};
+    delete updatedParams[paramKey];
+    setAiSearchParams(updatedParams);
   };
 
-  // Apply filters when search criteria change
+  
   useEffect(() => {
-    if (properties.length > 0) {
-      handleSearch();
-    }
+    handleSearch();
   }, [
     searchQuery,
     selectedType,
@@ -124,7 +219,7 @@ export default function App() {
     minPrice,
     maxPrice,
     bedrooms,
-    properties.length
+    aiSearchParams, 
   ]);
 
   const renderProperty = ({ item }) => (
@@ -205,21 +300,21 @@ export default function App() {
               setError(null);
               setLoading(true);
 
-              // Import the sample properties
+             
               const { sampleProperties } = require('../data/sampleProperties');
               const { addProperty } = require('../services/firestore');
 
-              // Add the first sample property
+              
               const result = await addProperty(sampleProperties[0]);
               console.log('Added sample property with ID:', result.id);
 
-              // Refresh the properties list
+              
               const updatedProperties = await getAllProperties();
               setProperties(updatedProperties);
               setFilteredProperties(updatedProperties);
               setLoading(false);
 
-              // Show success message
+            
               Alert.alert('Success', 'Sample property added successfully!');
             } catch (err) {
               console.error('Error adding sample property:', err);
@@ -235,13 +330,20 @@ export default function App() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.appName}>Property Listings</Text>
         <Text style={styles.tagline}>Find your dream property</Text>
       </View>
 
       <View style={styles.searchSection}>
+        
+        <SmartSearch onSearch={handleAiSearch} />
+        
+        
+        <SearchParameters params={aiSearchParams} onClearParam={clearSearchParam} />
+        
+       
         <View style={styles.searchInputContainer}>
           <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
           <TextInput
