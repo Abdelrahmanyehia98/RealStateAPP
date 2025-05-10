@@ -11,7 +11,6 @@ export default function LoginScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null)
 
-
     const isStrongPassword = (password) => {
         const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
         return regex.test(password);
@@ -42,7 +41,6 @@ export default function LoginScreen() {
             const user = userCredential.user;
             console.log('Sign in successful:', user.email);
             
-            // Wait a moment to ensure auth state is updated
             setTimeout(() => {
                 router.replace("/");
             }, 500);
@@ -59,7 +57,6 @@ export default function LoginScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
-
             <View style={styles.innerContainer}>
                 <Text style={styles.title}>Login Now:</Text>
 
@@ -73,11 +70,9 @@ export default function LoginScreen() {
                     autoCorrect={false}
                     keyboardType="email-address"
                     accessibilityLabel="Email input"
-
                 />
 
                 <Text style={styles.label}>Password</Text>
-
                 <TextInput
                     style={styles.input}
                     placeholder="Password"
@@ -93,7 +88,6 @@ export default function LoginScreen() {
                             styles.button,
                             (isLoading || !email || !password) && styles.disabledButton
                         ]}
-
                         onPress={handleLogin}
                         disabled={isLoading || !email || !password}
                         accessibilityRole="button"
@@ -111,14 +105,11 @@ export default function LoginScreen() {
                     </Pressable>
                 </View>
 
-
-
                 {errorMessage ? (
                     <View style={styles.errorContainer}>
                         <Text style={styles.errorText}>{errorMessage}</Text>
                     </View>
                 ) : null}
-
             </View>
         </KeyboardAvoidingView>
     );
@@ -127,13 +118,10 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
     registerLinkContainer: {
         width: "100%",
-
         flexDirection: "row",
-
         alignItems: 'center',
         marginVertical:10,
         gap: 4,
-
     },
     errorContainer: {
         backgroundColor: "#f8b4b453",
@@ -144,7 +132,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "rgb(248 180 180)",
     },
-
     errorText: {
         color: "#9b1c1cef",
         fontSize: 16,
@@ -158,12 +145,10 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#fff",
-
     },
     innerContainer: {
         flex: 1,
         justifyContent: "center",
-        // alignItems: "center",
         paddingHorizontal: 20,
     },
     title: {
@@ -187,7 +172,6 @@ const styles = StyleSheet.create({
     btnContainer: {
         width: "100%",
         alignItems: "flex-end",
-
     },
     button: {
         borderWidth: 1,
@@ -196,20 +180,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         borderRadius: 6,
         backgroundColor: 'white',
-
     },
     disabledButton: {
-        // backgroundColor: "#555",
-        // borderColor: "#777",
         opacity: 0.3,
     },
     buttonText: {
         color: '#1c9b25ef',
         fontSize: 18,
-        // fontWeight: "bold",
     },
     signUpLink: {
-        // marginTop: 20,
         color: "#1c9b25ef",
     },
     signUpText: {

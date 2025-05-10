@@ -10,7 +10,7 @@ const FontLoader = ({ children }) => {
     async function loadFonts() {
       try {
         await Font.loadAsync({
-          // Load icon fonts
+
           ...Ionicons.font,
           ...MaterialIcons.font,
           ...Feather.font,
@@ -19,7 +19,7 @@ const FontLoader = ({ children }) => {
         setFontsLoaded(true);
       } catch (error) {
         console.error('Error loading fonts:', error);
-        // Continue anyway to prevent blocking the app
+  
         setFontsLoaded(true);
       }
     }

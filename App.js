@@ -9,21 +9,20 @@ export default function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // Test Firebase connection
+ 
         const success = await testFirebaseConnection();
 
         if (success) {
           console.log("Firebase connection test passed!");
 
           try {
-            // Initialize sample properties in Firestore with retry mechanism
+      
             console.log("Attempting to initialize sample properties...");
             await initializeSampleProperties(sampleProperties);
             console.log("Sample properties initialization complete");
           } catch (firestoreError) {
             console.error("Error initializing sample properties:", firestoreError);
 
-            // Try again with a single property if batch fails
             try {
               console.log("Attempting to add a single sample property...");
               const { addProperty } = require('./services/firestore');

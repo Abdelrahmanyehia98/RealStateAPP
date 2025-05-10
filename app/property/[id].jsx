@@ -17,7 +17,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
 import { getAllProperties } from "../../services/firestore";
 
-// Sample static comments data
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -446,12 +445,12 @@ export default function PropertyDetails() {
   const [rating, setRating] = useState(0);
   const scrollViewRef = useRef(null);
 
-  // Load properties from Firestore
+
   useEffect(() => {
     const loadProperties = async () => {
       try {
         const propertiesData = await getAllProperties();
-        // Add comments to each property
+   
         const propertiesWithComments = propertiesData.map(property => ({
           ...property,
           comments: [
@@ -570,7 +569,7 @@ export default function PropertyDetails() {
       </View>
 
       <ScrollView>
-        {/* Image Gallery */}
+
         <View style={styles.imageGalleryContainer}>
           <ScrollView
             ref={scrollViewRef}
@@ -600,7 +599,7 @@ export default function PropertyDetails() {
                 key={index}
                 activeOpacity={1}
                 onPress={() => {
-                  // Optional: Add zoom functionality here if needed
+           
                 }}
               >
                 <Image
@@ -612,7 +611,6 @@ export default function PropertyDetails() {
             ))}
           </ScrollView>
 
-          {/* Navigation Buttons */}
           <TouchableOpacity
             style={[styles.navButton, styles.prevButton]}
             onPress={() => {
@@ -659,14 +657,13 @@ export default function PropertyDetails() {
             />
           </TouchableOpacity>
 
-          {/* Image Counter */}
+   
           <View style={styles.imageCounter}>
             <Text style={styles.imageCounterText}>
               {activeImageIndex + 1} / {property.images.length}
             </Text>
           </View>
 
-          {/* Image Indicators */}
           <View style={styles.imageIndicatorContainer}>
             {property.images.map((_, index) => (
               <TouchableOpacity
@@ -691,7 +688,6 @@ export default function PropertyDetails() {
           </View>
         </View>
 
-        {/* Property Info */}
         <View style={styles.infoContainer}>
           <View style={styles.propertyHeader}>
             <Text style={styles.title}>{property.title}</Text>
@@ -711,7 +707,7 @@ export default function PropertyDetails() {
             {property.type === "rent" ? "per month" : "total price"}
           </Text>
 
-          {/* Key Details */}
+
           <View style={styles.detailsContainer}>
             <View style={styles.detailItem}>
               <MaterialIcons name="king-bed" size={20} color="#29A132" />
@@ -727,13 +723,12 @@ export default function PropertyDetails() {
             </View>
           </View>
 
-          {/* Description */}
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.description}>{property.description}</Text>
           </View>
 
-          {/* Features */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Features</Text>
             <View style={styles.featuresContainer}>
@@ -746,17 +741,17 @@ export default function PropertyDetails() {
             </View>
           </View>
 
-          {/* Add to Cart Button */}
+
           <TouchableOpacity style={styles.addButton} onPress={handleAddToCart}>
             <Text style={styles.addButtonText}>Add to Cart</Text>
           </TouchableOpacity>
 
-          {/* Add the comments section before the similar properties section */}
+       
           {
             <View style={styles.commentsSection}>
               <Text style={styles.commentsTitle}>Comments & Reviews</Text>
 
-              {/* Comment Input Form */}
+
               <View style={styles.commentInputContainer}>
                 {
                   <View style={styles.starRatingContainer}>
@@ -814,7 +809,7 @@ export default function PropertyDetails() {
                 </View>
               </View>
 
-              {/* Comments List */}
+    
               {property.comments.map((comment) => (
                 <View key={comment.id} style={styles.commentCard}>
                   <View style={styles.commentHeader}>
@@ -845,7 +840,7 @@ export default function PropertyDetails() {
             </View>
           }
 
-          {/* Similar Properties */}
+
           {similarProperties.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Similar Properties</Text>
@@ -914,15 +909,7 @@ export default function PropertyDetails() {
         </View>
       </ScrollView>
 
-      {/* Contact Button */}
-      {/* <TouchableOpacity
-        style={styles.contactButton}
-        onPress={() => setShowContactModal(true)}
-      >
-        <Text style={styles.contactButtonText}>Contact Agent</Text>
-      </TouchableOpacity> */}
-
-      {/* Contact Modal */}
+  
       <Modal
         visible={showContactModal}
         animationType="slide"
@@ -1035,7 +1022,7 @@ const styles = StyleSheet.create({
   imageGalleryContainer: {
     position: "relative",
     height: 300,
-    backgroundColor: "#000", // Add background color to prevent white flash
+    backgroundColor: "#000", 
   },
   imageGallery: {
     height: 300,
@@ -1074,7 +1061,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   indicatorButton: {
-    padding: 5, // Increase touch target
+    padding: 5, 
   },
   imageIndicator: {
     width: 8,
@@ -1319,7 +1306,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  // Comments Section Styles
+  
   commentsSection: {
     padding: 15,
     backgroundColor: "#fff",

@@ -19,7 +19,6 @@ import { addProperty } from '../services/firestore';
 import { auth } from '../firebase';
 import * as ImagePicker from 'expo-image-picker';
 
-// Error-boundary imports with fallbacks
 let Checkbox = Switch;
 let Picker;
 
@@ -36,7 +35,6 @@ try {
 }
 
 const SellScreen = () => {
-    // Form state
     const [formData, setFormData] = useState({
         title: '',
         location: '',
@@ -55,15 +53,12 @@ const SellScreen = () => {
     const [typeModalVisible, setTypeModalVisible] = useState(false);
     const [cameraPermission, setCameraPermission] = useState(null);
 
-    // Request camera permissions when component mounts
     useEffect(() => {
         (async () => {
             try {
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 setCameraPermission(status === 'granted');
                 console.log('Initial camera permission status:', status);
-
-                // Also request media library permissions
                 await ImagePicker.requestMediaLibraryPermissionsAsync();
             } catch (error) {
                 console.error('Error requesting permissions:', error);
@@ -71,11 +66,9 @@ const SellScreen = () => {
         })();
     }, []);
 
-    // Options
     const propertyOptions = ['Apartment', 'House', 'Villa', 'Office', 'Shop'];
     const typeOptions = ['Buy', 'Rent'];
 
-    // Handle input changes
     const handleChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: value }));
         if (errors[name]) {
@@ -83,17 +76,14 @@ const SellScreen = () => {
         }
     };
 
-    // Handle image selection with error handling
     const handleImagePick = async () => {
         try {
-            // Request media library permissions
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
                 Alert.alert('Permission Denied', 'We need access to your media to upload images.');
                 return;
             }
 
-            // Launch image picker
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: 'image',
                 allowsEditing: true,
@@ -101,18 +91,15 @@ const SellScreen = () => {
                 quality: 0.8,
             });
 
-            // Process the result
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const selectedImage = result.assets[0];
                 console.log('Selected image:', selectedImage);
 
-                // Check file size if available
                 if (selectedImage.fileSize && selectedImage.fileSize > 5000000) {
                     Alert.alert('Image too large', 'Please select an image smaller than 5MB');
                     return;
                 }
 
-                // Update form data with the selected image
                 handleChange('image', selectedImage.uri);
             }
         } catch (error) {
@@ -121,14 +108,11 @@ const SellScreen = () => {
         }
     };
 
-    // Handle camera capture with error handling
     const handleCameraCapture = async () => {
         try {
             console.log('Opening camera...');
 
-            // Check if we already have camera permission
             if (!cameraPermission) {
-                // Request camera permissions again if needed
                 const { status } = await ImagePicker.requestCameraPermissionsAsync();
                 console.log('Camera permission status:', status);
 
@@ -143,7 +127,6 @@ const SellScreen = () => {
                             {
                                 text: 'Open Settings',
                                 onPress: () => {
-                                    // This would ideally open settings, but we'll just show another alert for now
                                     Alert.alert('Info', 'Please open your device settings and enable camera access for this app.');
                                 }
                             }
@@ -153,7 +136,6 @@ const SellScreen = () => {
                 }
             }
 
-            // Launch camera
             console.log('Launching camera...');
             Alert.alert('Opening Camera', 'The camera will open now. Please allow access if prompted.');
 
@@ -161,23 +143,20 @@ const SellScreen = () => {
                 allowsEditing: true,
                 aspect: [4, 3],
                 quality: 0.8,
-                exif: false, // Don't include EXIF data to reduce image size
+                exif: false,
             });
 
             console.log('Camera result:', result);
 
-            // Process the result
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const capturedImage = result.assets[0];
                 console.log('Captured image:', capturedImage);
 
-                // Check file size if available
                 if (capturedImage.fileSize && capturedImage.fileSize > 5000000) {
                     Alert.alert('Image too large', 'The captured image is too large. Please try again with lower quality.');
                     return;
                 }
 
-                // Update form data with the captured image
                 handleChange('image', capturedImage.uri);
                 Alert.alert('Success', 'Photo captured successfully!');
             } else {
@@ -192,18 +171,15 @@ const SellScreen = () => {
         }
     };
 
-    // Handle number inputs
     const handleNumberInput = (text, fieldName) => {
         if (/^\d*$/.test(text)) {
             handleChange(fieldName, text);
         }
     };
 
-    // Parse features from description or other fields
     const parseFeatures = () => {
         const features = [];
 
-        // Add common features based on property type
         if (formData.property.toLowerCase() === 'apartment') {
             features.push('Elevator');
         }
@@ -220,13 +196,11 @@ const SellScreen = () => {
             features.push('Negotiable Price');
         }
 
-        // Add "Parking" as a common feature
         features.push('Parking');
 
         return features;
     };
 
-    // Validate form
     const validateForm = () => {
         const newErrors = {};
         const requiredFields = ['title', 'location', 'description', 'property', 'type', 'bedroom', 'area', 'price', 'image'];
@@ -241,42 +215,38 @@ const SellScreen = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    // Handle form submission
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
         setSubmitting(true);
 
         try {
-            // Prepare property data for Firestore
             const propertyData = {
                 title: formData.title.trim(),
                 description: formData.description.trim(),
                 price: Number(formData.price),
                 location: formData.location.trim(),
-                type: formData.type.toLowerCase(), // Convert to lowercase to match expected values (buy/rent)
-                propertyType: formData.property.toLowerCase(), // Convert to lowercase to match expected values
+                type: formData.type.toLowerCase(), 
+                propertyType: formData.property.toLowerCase(), 
                 bedrooms: Number(formData.bedroom),
-                bathrooms: 1, // Default value
+                bathrooms: 1, 
                 area: `${formData.area} sqm`,
                 features: parseFeatures(),
                 image: formData.image,
-                images: [formData.image], // Use main image as the first additional image
+                images: [formData.image], 
                 negotiable: formData.negotiationable,
                 userId: auth.currentUser?.uid || 'anonymous',
                 userEmail: auth.currentUser?.email || 'anonymous',
-                status: 'pending' // Properties need approval before being listed
+                status: 'pending' 
             };
 
             console.log('Submitting property to Firestore:', propertyData);
 
-            // Add property to Firestore
             const result = await addProperty(propertyData);
             console.log('Property added successfully with ID:', result.id);
 
             Alert.alert('Success', 'Your property has been submitted for review. It will be listed once approved.');
 
-            // Reset form
             setFormData({
                 title: '',
                 location: '',
@@ -298,7 +268,6 @@ const SellScreen = () => {
         }
     };
 
-    // Render picker based on platform and availability
     const renderPicker = (items, selectedValue, fieldName, placeholder) => {
         if (!Picker) {
             return (
@@ -387,7 +356,6 @@ const SellScreen = () => {
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Property Details</Text>
 
-                {/* Image Upload */}
                 <View style={styles.imageSection}>
                     <TouchableOpacity
                         style={styles.imagePicker}
@@ -404,7 +372,6 @@ const SellScreen = () => {
                         )}
                     </TouchableOpacity>
 
-                    {/* Image Action Buttons */}
                     <View style={styles.imageActions}>
                         <TouchableOpacity
                             style={[styles.imageActionButton, { backgroundColor: '#3498db' }]}
@@ -437,7 +404,6 @@ const SellScreen = () => {
                         )}
                     </View>
 
-                    {/* Camera Instructions */}
                     <View style={styles.cameraInstructions}>
                         <Ionicons name="information-circle-outline" size={18} color="#7f8c8d" />
                         <Text style={styles.cameraInstructionsText}>
@@ -447,7 +413,6 @@ const SellScreen = () => {
                 </View>
                 {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
 
-                {/* Title */}
                 <Text style={styles.label}>Property Title</Text>
                 <TextInput
                     style={[styles.input, errors.title && styles.errorBorder]}
@@ -458,7 +423,6 @@ const SellScreen = () => {
                 />
                 {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
-                {/* Location */}
                 <Text style={styles.label}>Location</Text>
                 <TextInput
                     style={[styles.input, errors.location && styles.errorBorder]}
@@ -469,7 +433,6 @@ const SellScreen = () => {
                 />
                 {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
-                {/* Description */}
                 <Text style={styles.label}>Description</Text>
                 <TextInput
                     style={[styles.input, styles.textArea, errors.description && styles.errorBorder]}
@@ -482,14 +445,12 @@ const SellScreen = () => {
                 {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
 
                 <View style={styles.filterRow}>
-                    {/* Property Type Picker */}
                     <View style={styles.filterGroup}>
                         <Text style={styles.label}>Property Type</Text>
                         {renderPicker(propertyOptions, formData.property, 'property', 'Select Type')}
                         {errors.property && <Text style={styles.errorText}>{errors.property}</Text>}
                     </View>
 
-                    {/* Transaction Type Picker */}
                     <View style={styles.filterGroup}>
                         <Text style={styles.label}>Transaction Type</Text>
                         {renderPicker(typeOptions, formData.type, 'type', 'Select Type')}
@@ -498,7 +459,6 @@ const SellScreen = () => {
                 </View>
 
                 <View style={styles.filterRow}>
-                    {/* Bedroom */}
                     <View style={styles.filterGroup}>
                         <Text style={styles.label}>Bedrooms</Text>
                         <TextInput
@@ -512,7 +472,6 @@ const SellScreen = () => {
                         {errors.bedroom && <Text style={styles.errorText}>{errors.bedroom}</Text>}
                     </View>
 
-                    {/* Area */}
                     <View style={styles.filterGroup}>
                         <Text style={styles.label}>Area (m²)</Text>
                         <TextInput
@@ -527,7 +486,6 @@ const SellScreen = () => {
                     </View>
                 </View>
 
-                {/* Price */}
                 <Text style={styles.label}>Price ($)</Text>
                 <TextInput
                     style={[styles.input, errors.price && styles.errorBorder]}
@@ -539,7 +497,6 @@ const SellScreen = () => {
                 />
                 {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
 
-                {/* Negotiationable */}
                 <View style={styles.checkboxContainer}>
                     {Checkbox === Switch ? (
                         <Switch
@@ -558,7 +515,6 @@ const SellScreen = () => {
                     <Text style={styles.checkboxLabel}>Price is negotiable</Text>
                 </View>
 
-                {/* Submit Button */}
                 <TouchableOpacity
                     style={styles.submitButton}
                     onPress={handleSubmit}

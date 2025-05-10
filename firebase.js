@@ -8,13 +8,13 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDBMsgy7FgOnt5gI6yq9c4fNgCzbxXBEv0",
-  authDomain: "project-try-256e7.firebaseapp.com",
-  projectId: "project-try-256e7",
-  storageBucket: "project-try-256e7.firebasestorage.app",
-  messagingSenderId: "280597614578",
-  appId: "1:280597614578:web:19770672dc3fc372a1256b",
-  measurementId: "G-PHE1EDM3YS"
+  apiKey: "AIzaSyCGIXXxW7kpcfl-oHU-tOvZ6qjAp9l6iQA",
+  authDomain: "test-cc2b3.firebaseapp.com",
+  projectId: "test-cc2b3",
+  storageBucket: "test-cc2b3.firebasestorage.app",
+  messagingSenderId: "540492894422",
+  appId: "1:540492894422:web:7e8833c7197bd5d3f9b977",
+  measurementId: "G-7CB0ZDKYDQ"
 };
 
 // Initialize Firebase
@@ -61,15 +61,3 @@ const testFirebaseConnection = async () => {
 };
 
 export { auth, db, storage, testFirebaseConnection };
-
-
-
-
-
-//  apiKey: "AIzaSyCGIXXxW7kpcfl-oHU-tOvZ6qjAp9l6iQA",
-//   authDomain: "test-cc2b3.firebaseapp.com",
-//   projectId: "test-cc2b3",
-//   storageBucket: "test-cc2b3.firebasestorage.app",
-//   messagingSenderId: "540492894422",
-//   appId: "1:540492894422:web:7e8833c7197bd5d3f9b977",
-//   measurementId: "G-7CB0ZDKYDQ"

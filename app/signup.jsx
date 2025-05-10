@@ -25,7 +25,7 @@ export default function SignUpScreen() {
         setErrorMessage(null);
         setSuccessed(false);
 
-        // Validation checks
+ 
         const nameRegex = /^[a-zA-Z\s]{3,}$/;
         if (!nameRegex.test(name.trim())) {
             setErrorMessage("Please enter a valid name (letters only, at least 3 characters).");
@@ -57,16 +57,15 @@ export default function SignUpScreen() {
         setIsLoading(true);
 
         try {
-            // Create user with email and password
+       
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Update user profile with display name
+          
             await updateProfile(user, {
                 displayName: name
             });
 
-            // Add user data to Firestore
             await setDoc(doc(db, "Users", user.uid), {
                 name: name,
                 email: email,
@@ -78,7 +77,7 @@ export default function SignUpScreen() {
             setSuccessed(true);
             setErrorMessage(null);
             
-            // Redirect to login after successful signup
+           
             setTimeout(() => {
                 router.replace('/login');
             }, 1500);
@@ -86,7 +85,7 @@ export default function SignUpScreen() {
         } catch (error) {
             console.error("Signup error:", error);
             
-            // Handle specific errors
+        
             if (error.code === "auth/email-already-in-use") {
                 setErrorMessage("This email is already registered. Please login or use another email.");
             } else if (error.code === "auth/weak-password") {
@@ -296,11 +295,11 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#1c9b25ef',
         fontSize: 18,
-        // fontWeight: "bold",
+
     },
 
     loginLink: {
-        // marginTop: 20,
+
         color: "#1c9b25ef",
     },
     loginText: {

@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
-//components
 export default function Profile() {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -76,7 +75,7 @@ export default function Profile() {
         }
     };
 
-    // Add useEffect to refetch data when auth state changes
+
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             if (user) {
@@ -129,12 +128,12 @@ export default function Profile() {
                 const imagePath = `profile_images/${user.uid}/${Date.now()}`;
                 const downloadURL = await uploadImage(imageUri, imagePath);
 
-                // Update user profile in Firestore
+            
                 await updateDoc(doc(db, 'users', user.uid), {
                     profileImage: downloadURL
                 });
 
-                // Update user profile in Firebase Auth
+               
                 await updateProfile(user, {
                     photoURL: downloadURL
                 });
