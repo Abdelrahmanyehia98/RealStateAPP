@@ -22,7 +22,7 @@ const screenWidth = Dimensions.get("window").width;
 
 const properties = [
   {
-    id: "1",
+    id: "ebLjzceVIxULhaFIQ8Pl",
     title: "Luxury Villa",
     location: "Maadi, Cairo",
     price: 2000000,

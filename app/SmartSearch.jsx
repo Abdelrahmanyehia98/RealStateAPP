@@ -31,7 +31,7 @@ const SmartSearch = ({ onSearch }) => {
           value={query}
           onChangeText={setQuery}
           placeholder="Describe your ideal property..."
-          placeholderTextColor="#7f8c8d"
+          placeholderTextColor="#fff"
           onSubmitEditing={handleSearch}
         />
         {loading ? (
@@ -59,15 +59,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 10,
     paddingHorizontal: 10,
+    backgroundColor: '#2E2E2E',
+    padding: 10,
   },
   searchIcon: {
     marginRight: 10,
   },
   input: {
+    backgroundColor: '#797979',
     flex: 1,
     height: 40,
     fontSize: 16,
-    color: '#333',
+    color: '#fff',
+    borderRadius: 10,
+    padding: 4,
+    marginHorizontal: 5,
   },
   examples: {
     color: '#7f8c8d',

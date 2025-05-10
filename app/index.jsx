@@ -70,6 +70,7 @@ export default function App() {
         setProperties(propertiesData);
         setFilteredProperties(propertiesData);
         setError(null);
+        console.log(propertiesData);
       } catch (err) {
         console.error('Error loading properties:', err);
         setError('Failed to load properties. Please try again.');
@@ -338,7 +339,8 @@ const handleAiSearch = (params) => {
 
       <View style={styles.searchSection}>
         
-        <SmartSearch onSearch={handleAiSearch} />
+        <Text style={styles.aiSearchTitle}>Need help finding a property? Let SearchPT help you.</Text>
+        <SmartSearch onSearch={handleAiSearch} style={styles.smartSearch} />
         
         
         <SearchParameters params={aiSearchParams} onClearParam={clearSearchParam} />
@@ -724,5 +726,11 @@ const styles = StyleSheet.create({
   },
   socialIcon: {
     marginHorizontal: 10,
+  },
+  aiSearchTitle: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
   },
 });
