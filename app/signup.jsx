@@ -2,7 +2,8 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../firebase.js"
+import { auth, db } from "../firebase.js";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function SignUpScreen() {
     const router = useRouter();
@@ -11,25 +12,20 @@ export default function SignUpScreen() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [phone, setPhone] = useState("");
-
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const [successed, setSuccessed] = useState(false);
 
-
-
-
     const isStrongPassword = (password) => {
-
         const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-
         return regex.test(password);
     };
-    const handleSignUp = () => {
-        console.log(`Creating user with:${email}${password}`);
+
+    const handleSignUp = async () => {
         setErrorMessage(null);
         setSuccessed(false);
 
+        // Validation checks
         const nameRegex = /^[a-zA-Z\s]{3,}$/;
         if (!nameRegex.test(name.trim())) {
             setErrorMessage("Please enter a valid name (letters only, at least 3 characters).");
@@ -60,38 +56,58 @@ export default function SignUpScreen() {
 
         setIsLoading(true);
 
+        try {
+            // Create user with email and password
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
 
-        createUserWithEmailAndPassword(auth, email, password)
-            .then(async (userCredential) => {
-                const user = userCredential.user;
-                setSuccessed(true);
-                setErrorMessage(null);
-            })
-            .catch((error) => {
-                if (error.code === "auth/email-already-in-use") {
-                    setErrorMessage("This email is already registered. Please login or use another email.");
-                } else {
-                    setErrorMessage(error.message);
-                }
-            })
-            .finally(() => {
-                setIsLoading(false);
+            // Update user profile with display name
+            await updateProfile(user, {
+                displayName: name
             });
+
+            // Add user data to Firestore
+            await setDoc(doc(db, "Users", user.uid), {
+                name: name,
+                email: email,
+                phone: phone,
+                createdAt: new Date().toISOString(),
+                uid: user.uid
+            });
+
+            setSuccessed(true);
+            setErrorMessage(null);
+            
+            // Redirect to login after successful signup
+            setTimeout(() => {
+                router.replace('/login');
+            }, 1500);
+            
+        } catch (error) {
+            console.error("Signup error:", error);
+            
+            // Handle specific errors
+            if (error.code === "auth/email-already-in-use") {
+                setErrorMessage("This email is already registered. Please login or use another email.");
+            } else if (error.code === "auth/weak-password") {
+                setErrorMessage("Password should be at least 6 characters.");
+            } else if (error.code === "permission-denied") {
+                setErrorMessage("Permission denied. Please try again later.");
+            } else {
+                setErrorMessage(error.message || "An error occurred during signup.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
-
-
-
 
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
-
             <View style={styles.innerContainer}>
-                <Text style={styles.title}>Register Now:
-                </Text>
-
+                <Text style={styles.title}>Register Now:</Text>
 
                 <Text style={styles.label}>Name</Text>
                 <TextInput
@@ -101,8 +117,6 @@ export default function SignUpScreen() {
                     onChangeText={setName}
                     autoCapitalize="words"
                     autoCorrect={false}
-                    keyboardType="default"
-                    accessibilityLabel="Email input"
                 />
 
                 <Text style={styles.label}>Email</Text>
@@ -112,9 +126,7 @@ export default function SignUpScreen() {
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
-                    autoCorrect={false}
                     keyboardType="email-address"
-                    accessibilityLabel="Email input"
                 />
 
                 <Text style={styles.label}>Password</Text>
@@ -124,20 +136,18 @@ export default function SignUpScreen() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
-                    accessibilityLabel="Password input"
                 />
-                <Text style={styles.label}>rePassword</Text>
 
+                <Text style={styles.label}>Confirm Password</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="********"
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry
-                    accessibilityLabel="Confirm password input"
                 />
-                <Text style={styles.label}>phoneNumber</Text>
 
+                <Text style={styles.label}>Phone Number</Text>
                 <TextInput
                     style={styles.input}
                     placeholder="+## ##########"
@@ -145,10 +155,9 @@ export default function SignUpScreen() {
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                     maxLength={15}
-
                 />
-                <View style={styles.btnContainer}>
 
+                <View style={styles.btnContainer}>
                     <TouchableOpacity
                         style={[
                             styles.button,
@@ -156,53 +165,43 @@ export default function SignUpScreen() {
                         ]}
                         onPress={handleSignUp}
                         disabled={isLoading || !email || !password || !confirmPassword}
-                        accessibilityRole="button"
                     >
                         <Text style={styles.buttonText}>
-                            Submit
+                            {isLoading ? "Creating Account..." : "Submit"}
                         </Text>
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.loginLinkContainer}>
-
                     <Text style={styles.loginText}>Already have an account? </Text>
-
-                    <Pressable
-                        onPress={() => router.push("/login")}
-                    ><Text style={styles.loginLink}>Login</Text></Pressable>
-
+                    <Pressable onPress={() => router.push("/login")}>
+                        <Text style={styles.loginLink}>Login</Text>
+                    </Pressable>
                 </View>
 
+                {errorMessage ? (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>{errorMessage}</Text>
+                    </View>
+                ) : null}
 
-                <View >
-                    {errorMessage ? (
-                        <View style={styles.errorContainer}>
-                            <Text style={styles.errorText}>{errorMessage}</Text>
-                        </View>
-                    ) : null}
-                    {successed ? (
-                        <View style={styles.successContainer}>
-                            <TouchableOpacity onPress={() => router.replace('/login')}>
-                                <Text style={styles.successText}>
-                                    Success alert! now you can Login
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    ) : null}
-
-
-
-                </View>
+                {successed ? (
+                    <View style={styles.successContainer}>
+                        <Text style={styles.successText}>
+                            Account created successfully! Redirecting to login...
+                        </Text>
+                    </View>
+                ) : null}
             </View>
         </KeyboardAvoidingView>
     );
 }
 
+// ... (keep your existing styles)
 const styles = StyleSheet.create({
     loginLinkContainer: {
         width: "100%",
-   
+
         flexDirection: "row",
 
         alignItems: 'center',
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
     },
 
     successText: {
-        color: "#1c9b25ef", 
+        color: "#1c9b25ef",
         fontSize: 16,
         textAlign: "center",
 
