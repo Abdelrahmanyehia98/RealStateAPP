@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import {auth} from "../firebase.js"
+import { auth } from "../firebase.js"
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -16,8 +16,7 @@ export default function LoginScreen() {
         const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
         return regex.test(password);
     };
-    const handleLogin = () => {
-
+    const handleLogin = async () => {
         if (!email.trim() || !password.trim()) {
             setErrorMessage("Please fill in all fields.");
             return;
@@ -35,26 +34,25 @@ export default function LoginScreen() {
         }
 
         setIsLoading(true);
+        setErrorMessage(null);
 
-
-        signInWithEmailAndPassword(auth, email, password)
-            .then((userCredential) => {
-                 
-                const user = userCredential.user;
-                
-                console.log("45" + user);
-
-            })
-            .catch((error) => {
-                const errorCode = error.code;
-                setErrorMessage(error.message);
-
-            }).finally(() => {
-                setIsLoading(false);
+        try {
+            console.log('Attempting to sign in...');
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+            console.log('Sign in successful:', user.email);
+            
+            // Wait a moment to ensure auth state is updated
+            setTimeout(() => {
                 router.replace("/");
-
-            });;
-    }
+            }, 500);
+        } catch (error) {
+            console.error('Login error:', error);
+            setErrorMessage(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <KeyboardAvoidingView
@@ -101,7 +99,7 @@ export default function LoginScreen() {
                         accessibilityRole="button"
                     >
                         <Text style={styles.buttonText}>
-                            Submit
+                            {isLoading ? "Logging in..." : "Login"}
                         </Text>
                     </TouchableOpacity>
                 </View>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,417 +15,418 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, MaterialIcons, FontAwesome } from "@expo/vector-icons";
+import { getAllProperties } from "../../services/firestore";
 
 // Sample static comments data
 
 const screenWidth = Dimensions.get("window").width;
 
-const properties = [
-  {
-    id: "ebLjzceVIxULhaFIQ8Pl",
-    title: "Luxury Villa",
-    location: "Maadi, Cairo",
-    price: 2000000,
-    type: "buy",
-    propertyType: "villa",
-    bedrooms: 4,
-    bathrooms: 3,
-    area: "350 sqm",
-    description:
-      "Beautiful luxury villa with modern amenities, spacious rooms, and a private garden. Located in a prime area with easy access to all facilities.",
-    features: ["Swimming Pool", "Garden", "Security", "Parking", "Central AC"],
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
-    images: [
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
-      "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea",
-      "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "Downtown Apartment",
-    location: "Zamalek, Cairo",
-    price: 850000,
-    type: "buy",
-    propertyType: "apartment",
-    bedrooms: 2,
-    bathrooms: 2,
-    area: "120 sqm",
-    description:
-      "Modern apartment in the heart of downtown with stunning city views. Recently renovated with high-end finishes.",
-    features: ["Balcony", "Elevator", "Security", "Parking", "Furnished"],
-    image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-    images: [
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-      "https://images.unsplash.com/photo-1560448205-4d9b3e6a55c1",
-      "https://images.unsplash.com/photo-1560448205-4d9b3e6a55c2",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "3",
-    title: "Beach House",
-    location: "North Coast",
-    price: 1500000,
-    type: "buy",
-    propertyType: "house",
-    bedrooms: 3,
-    bathrooms: 2,
-    area: "250 sqm",
-    description:
-      "Stunning beach house with direct access to the beach. Perfect for vacation rentals or permanent living.",
-    features: ["Beach Access", "Terrace", "Security", "Parking", "Furnished"],
-    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
-    images: [
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
-      "https://images.unsplash.com/photo-1560185127-6ed189bf02f4",
-  "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg"
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "hello,This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "4",
-    title: "Modern Office Space",
-    location: "Downtown, Cairo",
-    price: 1200000,
-    type: "rent",
-    propertyType: "office",
-    bedrooms: 0,
-    bathrooms: 2,
-    area: "200 sqm",
-    description:
-      "Professional office space in prime business location. Includes reception area, meeting rooms, and high-speed internet.",
-    features: [
-      "Meeting Rooms",
-      "Reception",
-      "Security",
-      "Parking",
-      "High-Speed Internet",
-    ],
-    image: "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
-    images: [
-      "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
-      "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3b",
-      "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3c",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "5",
-    title: "Retail Shop",
-    location: "Mohandeseen, Cairo",
-    price: 950000,
-    type: "rent",
-    propertyType: "shop",
-    bedrooms: 0,
-    bathrooms: 1,
-    area: "80 sqm",
-    description:
-      "Prime retail space in high-traffic commercial area. Great visibility and foot traffic for any retail business.",
-    features: ["High Visibility", "Storage Room", "Security", "Parking"],
-    image: "https://images.unsplash.com/photo-1573164713988-8665fc963095",
-    images: [
-      "https://images.unsplash.com/photo-1573164713988-8665fc963095",
-      "https://images.unsplash.com/photo-1573164713988-8665fc963096",
-      "https://images.unsplash.com/photo-1573164713988-8665fc963097",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "6",
-    title: "Penthouse with View",
-    location: "New Cairo",
-    price: 3500000,
-    type: "buy",
-    propertyType: "apartment",
-    bedrooms: 3,
-    bathrooms: 3,
-    area: "280 sqm",
-    description:
-      "Luxurious penthouse with panoramic city views. Top-floor unit with private elevator and premium finishes.",
-    features: [
-      "Panoramic View",
-      "Private Elevator",
-      "Smart Home",
-      "Gym Access",
-      "Pool",
-    ],
-    image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
-    images: [
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b915",
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b916",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "7",
-    title: "Family Compound",
-    location: "6th of October",
-    price: 5000000,
-    type: "buy",
-    propertyType: "compound",
-    bedrooms: 5,
-    bathrooms: 4,
-    area: "600 sqm",
-    description:
-      "Spacious family compound with multiple buildings, garden, and private pool. Perfect for extended families.",
-    features: ["Private Pool", "Garden", "Security", "Parking", "Maid's Room"],
-    image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6",
-    images: [
-      "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6",
-      "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd7",
-      "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd8",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-  {
-    id: "8",
-    title: "Studio Apartment",
-    location: "Nasr City",
-    price: 600000,
-    type: "buy",
-    propertyType: "apartment",
-    bedrooms: 1,
-    bathrooms: 1,
-    area: "60 sqm",
-    description:
-      "Cozy studio apartment in central location. Recently renovated with modern kitchen and bathroom.",
-    features: ["Furnished", "Elevator", "Security", "Parking"],
-    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
-    images: [
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93689",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93690",
-    ],
-    comments: [
-      {
-        id: 1,
-        user: "John Doe",
-        avatar: "https://randomuser.me/api/portraits/men/1.jpg",
-        comment:
-          "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
-        date: "2024-03-15",
-        rating: 5,
-      },
-      {
-        id: 2,
-        user: "Jane Smith",
-        avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-        comment:
-          "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
-        date: "2024-03-14",
-        rating: 4,
-      },
-      {
-        id: 3,
-        user: "Mike Johnson",
-        avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-        comment:
-          "Great property! Would love to schedule a viewing. The photos don't do it justice.",
-        date: "2024-03-13",
-        rating: 5,
-      },
-    ],
-  },
-];
+// const properties = [
+//   {
+//     id: "ebLjzceVIxULhaFIQ8Pl",
+//     title: "Luxury Villa",
+//     location: "Maadi, Cairo",
+//     price: 2000000,
+//     type: "buy",
+//     propertyType: "villa",
+//     bedrooms: 4,
+//     bathrooms: 3,
+//     area: "350 sqm",
+//     description:
+//       "Beautiful luxury villa with modern amenities, spacious rooms, and a private garden. Located in a prime area with easy access to all facilities.",
+//     features: ["Swimming Pool", "Garden", "Security", "Parking", "Central AC"],
+//     image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+//     images: [
+//       "https://images.unsplash.com/photo-1600585154340-be6161a56a0c",
+//       "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea",
+//       "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "2",
+//     title: "Downtown Apartment",
+//     location: "Zamalek, Cairo",
+//     price: 850000,
+//     type: "buy",
+//     propertyType: "apartment",
+//     bedrooms: 2,
+//     bathrooms: 2,
+//     area: "120 sqm",
+//     description:
+//       "Modern apartment in the heart of downtown with stunning city views. Recently renovated with high-end finishes.",
+//     features: ["Balcony", "Elevator", "Security", "Parking", "Furnished"],
+//     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+//     images: [
+//       "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
+//       "https://images.unsplash.com/photo-1560448205-4d9b3e6a55c1",
+//       "https://images.unsplash.com/photo-1560448205-4d9b3e6a55c2",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "3",
+//     title: "Beach House",
+//     location: "North Coast",
+//     price: 1500000,
+//     type: "buy",
+//     propertyType: "house",
+//     bedrooms: 3,
+//     bathrooms: 2,
+//     area: "250 sqm",
+//     description:
+//       "Stunning beach house with direct access to the beach. Perfect for vacation rentals or permanent living.",
+//     features: ["Beach Access", "Terrace", "Security", "Parking", "Furnished"],
+//     image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
+//     images: [
+//       "https://images.unsplash.com/photo-1505691938895-1758d7feb511",
+//       "https://images.unsplash.com/photo-1560185127-6ed189bf02f4",
+//   "https://images.pexels.com/photos/106399/pexels-photo-106399.jpeg"
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "hello,This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "4",
+//     title: "Modern Office Space",
+//     location: "Downtown, Cairo",
+//     price: 1200000,
+//     type: "rent",
+//     propertyType: "office",
+//     bedrooms: 0,
+//     bathrooms: 2,
+//     area: "200 sqm",
+//     description:
+//       "Professional office space in prime business location. Includes reception area, meeting rooms, and high-speed internet.",
+//     features: [
+//       "Meeting Rooms",
+//       "Reception",
+//       "Security",
+//       "Parking",
+//       "High-Speed Internet",
+//     ],
+//     image: "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
+//     images: [
+//       "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3a",
+//       "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3b",
+//       "https://images.unsplash.com/photo-1556742400-b5de4e9d3f3c",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "5",
+//     title: "Retail Shop",
+//     location: "Mohandeseen, Cairo",
+//     price: 950000,
+//     type: "rent",
+//     propertyType: "shop",
+//     bedrooms: 0,
+//     bathrooms: 1,
+//     area: "80 sqm",
+//     description:
+//       "Prime retail space in high-traffic commercial area. Great visibility and foot traffic for any retail business.",
+//     features: ["High Visibility", "Storage Room", "Security", "Parking"],
+//     image: "https://images.unsplash.com/photo-1573164713988-8665fc963095",
+//     images: [
+//       "https://images.unsplash.com/photo-1573164713988-8665fc963095",
+//       "https://images.unsplash.com/photo-1573164713988-8665fc963096",
+//       "https://images.unsplash.com/photo-1573164713988-8665fc963097",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "6",
+//     title: "Penthouse with View",
+//     location: "New Cairo",
+//     price: 3500000,
+//     type: "buy",
+//     propertyType: "apartment",
+//     bedrooms: 3,
+//     bathrooms: 3,
+//     area: "280 sqm",
+//     description:
+//       "Luxurious penthouse with panoramic city views. Top-floor unit with private elevator and premium finishes.",
+//     features: [
+//       "Panoramic View",
+//       "Private Elevator",
+//       "Smart Home",
+//       "Gym Access",
+//       "Pool",
+//     ],
+//     image: "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
+//     images: [
+//       "https://images.unsplash.com/photo-1580587771525-78b9dba3b914",
+//       "https://images.unsplash.com/photo-1580587771525-78b9dba3b915",
+//       "https://images.unsplash.com/photo-1580587771525-78b9dba3b916",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "7",
+//     title: "Family Compound",
+//     location: "6th of October",
+//     price: 5000000,
+//     type: "buy",
+//     propertyType: "compound",
+//     bedrooms: 5,
+//     bathrooms: 4,
+//     area: "600 sqm",
+//     description:
+//       "Spacious family compound with multiple buildings, garden, and private pool. Perfect for extended families.",
+//     features: ["Private Pool", "Garden", "Security", "Parking", "Maid's Room"],
+//     image: "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6",
+//     images: [
+//       "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6",
+//       "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd7",
+//       "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd8",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+//   {
+//     id: "8",
+//     title: "Studio Apartment",
+//     location: "Nasr City",
+//     price: 600000,
+//     type: "buy",
+//     propertyType: "apartment",
+//     bedrooms: 1,
+//     bathrooms: 1,
+//     area: "60 sqm",
+//     description:
+//       "Cozy studio apartment in central location. Recently renovated with modern kitchen and bathroom.",
+//     features: ["Furnished", "Elevator", "Security", "Parking"],
+//     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
+//     images: [
+//       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688",
+//       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93689",
+//       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93690",
+//     ],
+//     comments: [
+//       {
+//         id: 1,
+//         user: "John Doe",
+//         avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+//         comment:
+//           "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+//         date: "2024-03-15",
+//         rating: 5,
+//       },
+//       {
+//         id: 2,
+//         user: "Jane Smith",
+//         avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+//         comment:
+//           "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+//         date: "2024-03-14",
+//         rating: 4,
+//       },
+//       {
+//         id: 3,
+//         user: "Mike Johnson",
+//         avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+//         comment:
+//           "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+//         date: "2024-03-13",
+//         rating: 5,
+//       },
+//     ],
+//   },
+// ];
 
 export default function PropertyDetails() {
   const { id } = useLocalSearchParams();
@@ -438,20 +439,70 @@ export default function PropertyDetails() {
     phone: "",
     message: "",
   });
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [newComment, setNewComment] = useState("");
   const [rating, setRating] = useState(0);
   const scrollViewRef = useRef(null);
 
-  const property = properties.find((p) => p.id === id);
-  const similarProperties = properties
-    .filter(
-      (p) =>
-        p.id !== id &&
-        (p.propertyType === property?.propertyType || p.type === property?.type)
-    )
-    .slice(0, 3);
+  // Load properties from Firestore
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        const propertiesData = await getAllProperties();
+        // Add comments to each property
+        const propertiesWithComments = propertiesData.map(property => ({
+          ...property,
+          comments: [
+            {
+              id: 1,
+              user: "John Doe",
+              avatar: "https://randomuser.me/api/portraits/men/1.jpg",
+              comment: "This property looks amazing! The location is perfect and the price seems reasonable for the area.",
+              date: "2024-03-15",
+              rating: 5,
+            },
+            {
+              id: 2,
+              user: "Jane Smith",
+              avatar: "https://randomuser.me/api/portraits/women/1.jpg",
+              comment: "I've been looking at similar properties in this area, and this one stands out. The features are exactly what I'm looking for.",
+              date: "2024-03-14",
+              rating: 4,
+            },
+            {
+              id: 3,
+              user: "Mike Johnson",
+              avatar: "https://randomuser.me/api/portraits/men/2.jpg",
+              comment: "Great property! Would love to schedule a viewing. The photos don't do it justice.",
+              date: "2024-03-13",
+              rating: 5,
+            },
+          ]
+        }));
+        setProperties(propertiesWithComments);
+      } catch (err) {
+        console.error("Error loading properties:", err);
+        Alert.alert("Error", "Failed to load property details");
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    loadProperties();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.notFoundText}>Loading...</Text>
+      </View>
+    );
+  }
+
+  const property = properties?.find((p) => p.id === id);
+  
   if (!property) {
     return (
       <View style={styles.container}>
@@ -459,6 +510,14 @@ export default function PropertyDetails() {
       </View>
     );
   }
+
+  const similarProperties = properties
+    ?.filter(
+      (p) =>
+        p.id !== id &&
+        (p.propertyType === property?.propertyType || p.type === property?.type)
+    )
+    .slice(0, 3) || [];
 
   const handleShare = async () => {
     try {
@@ -554,7 +613,7 @@ export default function PropertyDetails() {
           </ScrollView>
 
           {/* Navigation Buttons */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.navButton, styles.prevButton]}
             onPress={() => {
               if (activeImageIndex > 0) {
@@ -562,20 +621,20 @@ export default function PropertyDetails() {
                 setActiveImageIndex(newIndex);
                 scrollViewRef.current?.scrollTo({
                   x: newIndex * screenWidth,
-                  animated: true
+                  animated: true,
                 });
               }
             }}
             disabled={activeImageIndex === 0}
           >
-            <Ionicons 
-              name="chevron-back" 
-              size={30} 
-              color={activeImageIndex === 0 ? "#ccc" : "#fff"} 
+            <Ionicons
+              name="chevron-back"
+              size={30}
+              color={activeImageIndex === 0 ? "#ccc" : "#fff"}
             />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.navButton, styles.nextButton]}
             onPress={() => {
               if (activeImageIndex < property.images.length - 1) {
@@ -583,16 +642,20 @@ export default function PropertyDetails() {
                 setActiveImageIndex(newIndex);
                 scrollViewRef.current?.scrollTo({
                   x: newIndex * screenWidth,
-                  animated: true
+                  animated: true,
                 });
               }
             }}
             disabled={activeImageIndex === property.images.length - 1}
           >
-            <Ionicons 
-              name="chevron-forward" 
-              size={30} 
-              color={activeImageIndex === property.images.length - 1 ? "#ccc" : "#fff"} 
+            <Ionicons
+              name="chevron-forward"
+              size={30}
+              color={
+                activeImageIndex === property.images.length - 1
+                  ? "#ccc"
+                  : "#fff"
+              }
             />
           </TouchableOpacity>
 
@@ -612,7 +675,7 @@ export default function PropertyDetails() {
                   setActiveImageIndex(index);
                   scrollViewRef.current?.scrollTo({
                     x: index * screenWidth,
-                    animated: true
+                    animated: true,
                   });
                 }}
                 style={styles.indicatorButton}
@@ -970,9 +1033,9 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   imageGalleryContainer: {
-    position: 'relative',
+    position: "relative",
     height: 300,
-    backgroundColor: '#000', // Add background color to prevent white flash
+    backgroundColor: "#000", // Add background color to prevent white flash
   },
   imageGallery: {
     height: 300,
@@ -983,15 +1046,15 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   navButton: {
-    position: 'absolute',
-    top: '50%',
+    position: "absolute",
+    top: "50%",
     transform: [{ translateY: -20 }],
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 2,
   },
   prevButton: {
@@ -1027,19 +1090,19 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   imageCounter: {
-    position: 'absolute',
+    position: "absolute",
     top: 20,
     right: 20,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
     zIndex: 1,
   },
   imageCounterText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   infoContainer: {
     padding: 20,

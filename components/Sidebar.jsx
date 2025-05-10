@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useRouter } from "expo-router";
 import { usePathname } from 'expo-router';
+import { auth } from '../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const Sidebar = () => {
 
@@ -22,6 +24,40 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const windowWidth = Dimensions.get('window').width;
   const translateX = useRef(new Animated.Value(2 * windowWidth)).current;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    console.log('Setting up auth listener...');
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log('Auth state changed:', user ? 'User is logged in' : 'No user');
+      setIsAuthenticated(!!user);
+    });
+
+    // Check initial auth state
+    const currentUser = auth.currentUser;
+    console.log('Initial auth state:', currentUser ? 'User is logged in' : 'No user');
+    setIsAuthenticated(!!currentUser);
+
+    // Cleanup subscription
+    return () => {
+      console.log('Cleaning up auth listener');
+      unsubscribe();
+    };
+  }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      console.log('Attempting to logout...');
+      await signOut(auth);
+      console.log('Logout successful');
+      router.replace('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   const toggleMenu = () => {
 
@@ -80,46 +116,51 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
           </View>
 
           <View style={styles.authButtons}>
-            {/* Logout Button */}
-            {/* <Pressable
-              style={({ pressed }) => [
-                styles.logoutButton,
-                pressed && styles.logoutButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.logoutText, pressed && styles.logoutTextPressed]}>
-                  Logout
-                </Text>
-              )}
-            </Pressable>  */}
-            <Pressable
-              onPress={() => router.push("/login")}
-              style={({ pressed }) => [
-                styles.loginButton,
-                pressed && styles.loginButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.loginText, pressed && styles.loginTextPressed]}>
-                  Login
-                </Text>
-              )}
-            </Pressable>
+            {isAuthenticated ? (
+              <Pressable
+                onPress={handleLogout}
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.logoutButtonPressed,
+                ]}
+              >
+                {({ pressed }) => (
+                  <Text style={[styles.logoutText, pressed && styles.logoutTextPressed]}>
+                    Logout
+                  </Text>
+                )}
+              </Pressable>
+            ) : (
+              <>
+                <Pressable
+                  onPress={() => router.push("/login")}
+                  style={({ pressed }) => [
+                    styles.loginButton,
+                    pressed && styles.loginButtonPressed,
+                  ]}
+                >
+                  {({ pressed }) => (
+                    <Text style={[styles.loginText, pressed && styles.loginTextPressed]}>
+                      Login
+                    </Text>
+                  )}
+                </Pressable>
 
-            <Pressable
-              onPress={() => router.push("/signup")}
-              style={({ pressed }) => [
-                styles.registerButton,
-                pressed && styles.registerButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.registerText, pressed && styles.registerTextPressed]}>
-                  Register
-                </Text>
-              )}
-            </Pressable>
+                <Pressable
+                  onPress={() => router.push("/signup")}
+                  style={({ pressed }) => [
+                    styles.registerButton,
+                    pressed && styles.registerButtonPressed,
+                  ]}
+                >
+                  {({ pressed }) => (
+                    <Text style={[styles.registerText, pressed && styles.registerTextPressed]}>
+                      Register
+                    </Text>
+                  )}
+                </Pressable>
+              </>
+            )}
           </View>
 
           <Pressable

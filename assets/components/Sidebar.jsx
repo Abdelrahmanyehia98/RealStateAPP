@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,23 +11,39 @@ import {
 } from 'react-native';
 import { useRouter } from "expo-router";
 import { usePathname } from 'expo-router';
+import { auth } from '../../firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const Sidebar = () => {
-
   const router = useRouter();
-const [route, setRoute] = useState(usePathname().split('/').pop())
-
-
+  const [route, setRoute] = useState(usePathname().split('/').pop());
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [isMenuOpened, setIsMenuOpened] = useState(false);
   const windowWidth = Dimensions.get('window').width;
   const translateX = useRef(new Animated.Value(2 * windowWidth)).current;
 
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsAuthenticated(!!user);
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, []);
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.replace('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   const toggleMenu = () => {
-
-    // Handle menu toggle animation
-
-
     if (isMenuOpened) {
       Animated.parallel([
         Animated.timing(translateX, {
@@ -43,7 +59,6 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
           duration: 300,
           useNativeDriver: true,
         }),
-
       ]).start();
     }
     setIsMenuOpened(!isMenuOpened);
@@ -51,13 +66,12 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
 
   // Menu items data
   const menuItems = [
-    { title: "Home", path: "/", name: "index" , isActive:true},
-    { title: "About", path: "/About", name: "About",isActive:false},
-    { title: "Admin", path: "/Admin", name: "Admin" ,isActive:false},
-    { title: "Profile", path: "/../Profile", name: "Profile" ,isActive:false},
-    { title: "Sell", path: "/sell", name: "Sell" ,isActive:false},
-    { title: "Cart", path: "/cart", name: "Cart" ,isActive:false},
-    
+    { title: "Home", path: "/", name: "index", isActive: true },
+    { title: "About", path: "/About", name: "About", isActive: false },
+    { title: "Admin", path: "/Admin", name: "Admin", isActive: false },
+    { title: "Profile", path: "/../Profile", name: "Profile", isActive: false },
+    { title: "Sell", path: "/sell", name: "Sell", isActive: false },
+    { title: "Cart", path: "/cart", name: "Cart", isActive: false },
   ];
 
   return (
@@ -80,46 +94,51 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
           </View>
 
           <View style={styles.authButtons}>
-            {/* Logout Button */}
-            {/* <Pressable
-              style={({ pressed }) => [
-                styles.logoutButton,
-                pressed && styles.logoutButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.logoutText, pressed && styles.logoutTextPressed]}>
-                  Logout
-                </Text>
-              )}
-            </Pressable>  */}
-            <Pressable
-              onPress={() => router.push("/login")}
-              style={({ pressed }) => [
-                styles.loginButton,
-                pressed && styles.loginButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.loginText, pressed && styles.loginTextPressed]}>
-                  Login
-                </Text>
-              )}
-            </Pressable>
+            {isAuthenticated ? (
+              <Pressable
+                onPress={handleLogout}
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.logoutButtonPressed,
+                ]}
+              >
+                {({ pressed }) => (
+                  <Text style={[styles.logoutText, pressed && styles.logoutTextPressed]}>
+                    Logout
+                  </Text>
+                )}
+              </Pressable>
+            ) : (
+              <>
+                <Pressable
+                  onPress={() => router.push("/login")}
+                  style={({ pressed }) => [
+                    styles.loginButton,
+                    pressed && styles.loginButtonPressed,
+                  ]}
+                >
+                  {({ pressed }) => (
+                    <Text style={[styles.loginText, pressed && styles.loginTextPressed]}>
+                      Login
+                    </Text>
+                  )}
+                </Pressable>
 
-            <Pressable
-              onPress={() => router.push("/signup")}
-              style={({ pressed }) => [
-                styles.registerButton,
-                pressed && styles.registerButtonPressed,
-              ]}
-            >
-              {({ pressed }) => (
-                <Text style={[styles.registerText, pressed && styles.registerTextPressed]}>
-                  Register
-                </Text>
-              )}
-            </Pressable>
+                <Pressable
+                  onPress={() => router.push("/signup")}
+                  style={({ pressed }) => [
+                    styles.registerButton,
+                    pressed && styles.registerButtonPressed,
+                  ]}
+                >
+                  {({ pressed }) => (
+                    <Text style={[styles.registerText, pressed && styles.registerTextPressed]}>
+                      Register
+                    </Text>
+                  )}
+                </Pressable>
+              </>
+            )}
           </View>
 
           <Pressable
@@ -138,8 +157,6 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
         </View>
       </SafeAreaView>
 
-
-
       {/* Sidebar Menu */}
       <Animated.View
         style={[
@@ -147,7 +164,6 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
           {
             transform: [{ translateX }],
             top: headerHeight,
-
           }
         ]}
       >
@@ -157,17 +173,13 @@ const [route, setRoute] = useState(usePathname().split('/').pop())
             onPress={() => {
               router.push(item.path);
               setRoute(item.name)
-      
               toggleMenu();
-
             }}
             style={styles.menuItem}
           >
-            <Text style={[styles.menuItemText, route==item.name && styles.activeItem]}>{item.title}</Text>
+            <Text style={[styles.menuItemText, route == item.name && styles.activeItem]}>{item.title}</Text>
           </Pressable>
         ))}
-
-
       </Animated.View>
     </>
   );
@@ -292,7 +304,6 @@ const styles = StyleSheet.create({
     zIndex: 100,
     elevation: 20,
     borderRightWidth: 1,
-
   },
   menuItem: {
     width: '100%',
