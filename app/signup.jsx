@@ -2,10 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, db } from "../firebase.js"
-import { doc, setDoc } from "firebase/firestore";
-import Sidebar from "../components/Sidebar";
-
+import { auth } from "../firebase.js"
 
 export default function SignUpScreen() {
     const router = useRouter();
@@ -66,74 +63,15 @@ export default function SignUpScreen() {
 
         createUserWithEmailAndPassword(auth, email, password)
             .then(async (userCredential) => {
-                try {
-                    // Get the user from the credential
-                    const user = userCredential.user;
-                    console.log("User created successfully:", user.uid);
-
-                    // Update the user profile
-                    try {
-                        await updateProfile(user, {
-                            displayName: name,
-                        });
-                        console.log("Profile updated successfully");
-                    } catch (profileError) {
-                        console.error("Error updating profile:", profileError);
-                        // Continue even if profile update fails
-                    }
-
-                    // Save user data to Firestore
-                    try {
-                        await setDoc(doc(db, "users", user.uid), {
-                            name,
-                            email,
-                            phone,
-                            uid: user.uid,
-                            createdAt: new Date(),
-                        });
-                        console.log("User data saved to Firestore");
-                    } catch (firestoreError) {
-                        console.error("Error saving to Firestore:", firestoreError);
-                        // Continue even if Firestore save fails
-                    }
-
-                    // Mark registration as successful
-                    setSuccessed(true);
-                    setErrorMessage(null);
-
-                    // Add a delay before allowing navigation to login
-                    setTimeout(() => {
-                        console.log("Registration complete, ready for login");
-                    }, 1500);
-                } catch (error) {
-                    console.error("Error in registration process:", error);
-                    setErrorMessage("Registration process error: " + error.message);
-                }
+                const user = userCredential.user;
+                setSuccessed(true);
+                setErrorMessage(null);
             })
             .catch((error) => {
-                console.error("Registration error:", error);
-                console.error("Error code:", error.code);
-                console.error("Error message:", error.message);
-
-                // Handle specific Firebase Auth errors
-                switch (error.code) {
-                    case "auth/email-already-in-use":
-                        setErrorMessage("This email is already registered. Please login or use another email.");
-                        break;
-                    case "auth/invalid-email":
-                        setErrorMessage("The email address is not valid.");
-                        break;
-                    case "auth/operation-not-allowed":
-                        setErrorMessage("Email/password accounts are not enabled. Please contact support.");
-                        break;
-                    case "auth/weak-password":
-                        setErrorMessage("The password is too weak. Please use a stronger password.");
-                        break;
-                    case "auth/network-request-failed":
-                        setErrorMessage("Network error. Please check your internet connection and try again.");
-                        break;
-                    default:
-                        setErrorMessage(`Registration failed: ${error.message}`);
+                if (error.code === "auth/email-already-in-use") {
+                    setErrorMessage("This email is already registered. Please login or use another email.");
+                } else {
+                    setErrorMessage(error.message);
                 }
             })
             .finally(() => {
@@ -245,15 +183,9 @@ export default function SignUpScreen() {
                     ) : null}
                     {successed ? (
                         <View style={styles.successContainer}>
-                            <Text style={styles.successText}>
-                                Registration successful! Your account has been created.
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.loginButton}
-                                onPress={() => router.replace('/login')}
-                            >
-                                <Text style={styles.loginButtonText}>
-                                    Go to Login
+                            <TouchableOpacity onPress={() => router.replace('/login')}>
+                                <Text style={styles.successText}>
+                                    Success alert! now you can Login
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -270,8 +202,11 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
     loginLinkContainer: {
         width: "100%",
+   
         flexDirection: "row",
+
         alignItems: 'center',
+
     },
     successContainer: {
         backgroundColor: "#b4f8c153",
@@ -281,26 +216,14 @@ const styles = StyleSheet.create({
         width: "100%",
         borderWidth: 1,
         borderColor: "rgb(180, 248, 193)",
-        alignItems: 'center',
+
     },
+
     successText: {
-        color: "#1c9b25ef",
+        color: "#1c9b25ef", 
         fontSize: 16,
         textAlign: "center",
-        marginBottom: 15,
-    },
-    loginButton: {
-        backgroundColor: "#1c9b25ef",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 6,
-        marginTop: 10,
-    },
-    loginButtonText: {
-        color: "white",
-        fontSize: 16,
-        fontWeight: "bold",
-        textAlign: "center",
+
     },
 
     errorContainer: {

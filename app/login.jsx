@@ -3,8 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, KeyboardAvo
 import { useRouter } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import {auth} from "../firebase.js"
-import Sidebar from "../components/Sidebar";
-
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -41,9 +39,9 @@ export default function LoginScreen() {
 
         signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
-                // Signed in 
+                 
                 const user = userCredential.user;
-                // ...
+                
                 console.log("45" + user);
 
             })
