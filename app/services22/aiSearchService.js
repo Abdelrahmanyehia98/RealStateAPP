@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 
 export const processNaturalLanguageQuery = async (query) => {
   try {
