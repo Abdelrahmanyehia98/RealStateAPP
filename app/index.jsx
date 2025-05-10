@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getAllProperties, getFilteredProperties } from '../services/firestore';
 
-// Define global cart data
+
 if (!global.cartItems) {
   global.cartItems = [];
 }
@@ -45,7 +45,7 @@ export default function App() {
     return 3;
   }
 
-  // Handle screen size changes
+  
   useEffect(() => {
     const subscription = Dimensions.addEventListener("change", () => {
       setNumColumns(getNumColumns());
@@ -53,7 +53,7 @@ export default function App() {
     return () => subscription?.remove();
   }, []);
 
-  // Update cart items when global cart changes
+  
   useEffect(() => {
     setCartItems(global.cartItems);
   }, [global.cartItems]);
@@ -78,7 +78,7 @@ export default function App() {
     loadProperties();
   }, []);
 
-  // Handle search and filtering
+
   const handleSearch = async () => {
     try {
       setLoading(true);
